@@ -1,0 +1,703 @@
+{
+	"info": {
+		"_postman_id": "4b62d8a5-7b5e-4e2a-b9d1-8f5c6d3f4e2a",
+		"name": "QR Order API (Organisée par Rôle)",
+		"description": "Collection pour tester l'API de commande par QR Code, organisée par rôle utilisateur.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "0. SCÉNARIO : Scan QR & Commande (Client)",
+			"description": "Ce dossier simule le parcours complet d'un client qui scanne un QR Code, consulte le menu et passe commande.",
+			"item": [
+				{
+					"name": "1. [Scan QR] Charger le Restaurant et son Menu",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/restaurants/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"restaurants",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "uuid-du-restaurant"
+								}
+							]
+						},
+						"description": "Cette requête simule ce qui se passe quand le client scanne le QR Code. Le frontend récupère toutes les infos du restaurant, ses catégories et ses plats."
+					},
+					"response": []
+				},
+				{
+					"name": "2. [Action] Envoyer la Commande",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"restaurantId\": \"uuid-du-restaurant\",\n    \"tableId\": \"uuid-de-la-table-venue-du-qr\",\n    \"items\": [\n        {\n            \"menuItemId\": \"uuid-du-plat\",\n            \"quantity\": 2,\n            \"note\": \"Sans sel\"\n        }\n    ],\n    \"note\": \"Commande urgente\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							]
+						},
+						"description": "Le client valide son panier. L'ID de la table est extrait du QR Code scanné au début."
+					},
+					"response": []
+				},
+				{
+					"name": "3. [Suivi] Consulter l'état de ma commande",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "uuid-de-la-commande-creee"
+								}
+							]
+						},
+						"description": "Le client peut voir si sa commande est en préparation ou servie."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "1. Authentification (Tous)",
+			"item": [
+				{
+					"name": "Inscription",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"owner@example.com\",\n    \"password\": \"password123\",\n    \"name\": \"Jean Dupont\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Connexion",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.access_token) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"owner@example.com\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Client (Public / Connecté)",
+			"description": "Fonctionnalités accessibles aux clients pour naviguer et commander.",
+			"item": [
+				{
+					"name": "Obtenir mon profil",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users",
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Lister les restaurants",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/restaurants",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"restaurants"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Détails d'un restaurant & Menus",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/restaurants/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"restaurants",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "uuid-du-restaurant"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Lister les catégories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/menus/categories/:restaurantId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"menus",
+								"categories",
+								":restaurantId"
+							],
+							"variable": [
+								{
+									"key": "restaurantId",
+									"value": "uuid-du-restaurant"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Passer une commande",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"restaurantId\": \"uuid-du-restaurant\",\n    \"tableId\": \"uuid-de-la-table\",\n    \"items\": [\n        {\n            \"menuItemId\": \"uuid-du-plat\",\n            \"quantity\": 2,\n            \"note\": \"Sans oignons\"\n        }\n    ],\n    \"note\": \"À emporter s'il vous plaît\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Suivre ma commande",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "uuid-de-la-commande"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Personnel (Staff / Manager)",
+			"description": "Fonctionnalités pour gérer les commandes et la disponibilité des plats au quotidien.",
+			"item": [
+				{
+					"name": "Lister les commandes (Restaurant)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders/restaurant/:restaurantId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"restaurant",
+								":restaurantId"
+							],
+							"variable": [
+								{
+									"key": "restaurantId",
+									"value": "uuid-du-restaurant"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mettre à jour le statut d'une commande",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"PREPARING\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/orders/:id/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								":id",
+								"status"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "uuid-de-la-commande"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mettre à jour un plat (Disponibilité / Prix)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"price\": 13.50,\n    \"isAvailable\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/menus/items/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"menus",
+								"items",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "uuid-du-plat"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Propriétaire (Owner)",
+			"description": "Configuration complète du restaurant, des tables et du menu.",
+			"item": [
+				{
+					"name": "Mettre à jour les infos du restaurant",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Restaurant Mis à Jour\",\n    \"address\": \"456 Boulevard du Goût\",\n    \"phone\": \"+33000000000\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/restaurants/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"restaurants",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "uuid-du-restaurant"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Créer une catégorie",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Nouveaux Plats\",\n    \"restaurantId\": \"uuid-du-restaurant\",\n    \"order\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/menus/categories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"menus",
+								"categories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Créer une table",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Table VIP\",\n    \"capacity\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tables",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tables"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Génération de tables en masse",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"startNumber\": 1,\n    \"count\": 10,\n    \"defaultCapacity\": 4\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tables/bulk",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tables",
+								"bulk"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Lister les tables",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tables/restaurant/:restaurantId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tables",
+								"restaurant",
+								":restaurantId"
+							],
+							"variable": [
+								{
+									"key": "restaurantId",
+									"value": "uuid-du-restaurant"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Générer QR Code (Table)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tables/:id/qr",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tables",
+								":id",
+								"qr"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "uuid-de-la-table"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Générer QR Code (Via Restaurant)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/restaurants/:id/qr/:tableId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"restaurants",
+								":id",
+								"qr",
+								":tableId"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "uuid-du-restaurant"
+								},
+								{
+									"key": "tableId",
+									"value": "uuid-de-la-table"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Supprimer un plat",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/menus/items/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"menus",
+								"items",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "uuid-du-plat"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Super Admin",
+			"description": "Fonctionnalités pour l'administration globale de la plateforme.",
+			"item": [
+				{
+					"name": "Créer un nouveau restaurant",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Nouveau Restaurant Franchise\",\n    \"address\": \"789 Avenue des Alpes\",\n    \"phone\": \"+33111111111\",\n    \"email\": \"admin@franchise.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/restaurants",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"restaurants"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

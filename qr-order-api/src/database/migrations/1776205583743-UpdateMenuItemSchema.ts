@@ -1,0 +1,124 @@
+import { MigrationInterface, QueryRunner } from "typeorm";
+
+export class UpdateMenuItemSchema1776205583743 implements MigrationInterface {
+    name = 'UpdateMenuItemSchema1776205583743'
+
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`CREATE TABLE \`plans\` (\`id\` varchar(36) NOT NULL, \`name\` varchar(255) NOT NULL, \`description\` varchar(255) NULL, \`price\` decimal(10,2) NOT NULL, \`currency\` varchar(255) NOT NULL DEFAULT 'EUR', \`interval\` varchar(255) NOT NULL DEFAULT 'month', \`stripePriceId\` varchar(255) NULL, \`features\` json NULL, \`isActive\` tinyint NOT NULL DEFAULT 1, \`createdAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updatedAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`staff_members\` (\`id\` varchar(36) NOT NULL, \`status\` enum ('ACTIVE', 'INACTIVE', 'ON_LEAVE') NOT NULL DEFAULT 'ACTIVE', \`phoneNumber\` varchar(255) NULL, \`position\` varchar(255) NULL, \`createdAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updatedAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`userId\` varchar(36) NULL, \`restaurantId\` varchar(36) NULL, UNIQUE INDEX \`REL_e360dda42b3876dc5a856d44ca\` (\`userId\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`restaurant_settings\` (\`id\` varchar(36) NOT NULL, \`primaryColor\` varchar(255) NOT NULL DEFAULT '#FF0000', \`secondaryColor\` varchar(255) NOT NULL DEFAULT '#FFFFFF', \`currency\` varchar(255) NOT NULL DEFAULT 'EUR', \`language\` varchar(255) NOT NULL DEFAULT 'fr', \`isOrderingEnabled\` tinyint NOT NULL DEFAULT 1, \`isTaxIncluded\` tinyint NOT NULL DEFAULT 0, \`taxRate\` decimal(5,2) NOT NULL DEFAULT '0.00', \`staffCanEditMenu\` tinyint NOT NULL DEFAULT 1, \`staffCanManageOrders\` tinyint NOT NULL DEFAULT 1, \`managerCanEditMenu\` tinyint NOT NULL DEFAULT 1, \`managerCanManageOrders\` tinyint NOT NULL DEFAULT 1, \`managerCanSeeStats\` tinyint NOT NULL DEFAULT 1, \`managerCanManageStaff\` tinyint NOT NULL DEFAULT 0, \`createdAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updatedAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`restaurantId\` varchar(36) NULL, UNIQUE INDEX \`REL_0fbfc0e256a87208b9e3083628\` (\`restaurantId\`), PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`payments\` (\`id\` varchar(36) NOT NULL, \`amount\` decimal(10,2) NOT NULL, \`currency\` varchar(255) NOT NULL DEFAULT 'eur', \`status\` enum ('PENDING', 'SUCCESS', 'FAILED', 'REFUNDED') NOT NULL DEFAULT 'PENDING', \`stripePaymentIntentId\` varchar(255) NULL, \`stripeSessionId\` varchar(255) NULL, \`createdAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updatedAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`orderId\` varchar(36) NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`menu_item_options\` (\`id\` varchar(36) NOT NULL, \`name\` varchar(255) NOT NULL, \`price\` decimal(10,2) NOT NULL DEFAULT '0.00', \`isAvailable\` tinyint NOT NULL DEFAULT 1, \`menuItemId\` varchar(36) NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`CREATE TABLE \`menu_categories\` (\`id\` varchar(36) NOT NULL, \`name\` varchar(255) NOT NULL, \`description\` varchar(255) NULL, \`order\` int NOT NULL DEFAULT '0', \`isActive\` tinyint NOT NULL DEFAULT 1, \`createdAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), \`updatedAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), \`restaurantId\` varchar(36) NULL, PRIMARY KEY (\`id\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` ADD \`badgeLabel\` varchar(255) NULL`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` ADD \`badgeColor\` varchar(255) NULL`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` ADD \`stockQty\` int NOT NULL DEFAULT '0'`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` ADD \`lowStockThreshold\` int NOT NULL DEFAULT '5'`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` ADD \`displayOrder\` int NOT NULL DEFAULT '0'`);
+        await queryRunner.query(`ALTER TABLE \`orders\` ADD \`orderNumber\` int NULL`);
+        await queryRunner.query(`ALTER TABLE \`orders\` ADD \`type\` enum ('DINE_IN', 'TAKE_AWAY') NOT NULL DEFAULT 'DINE_IN'`);
+        await queryRunner.query(`ALTER TABLE \`orders\` ADD \`customerName\` varchar(255) NULL`);
+        await queryRunner.query(`ALTER TABLE \`categories\` DROP FOREIGN KEY \`FK_fe8e7d37475de7eb2f8f83a6da0\``);
+        await queryRunner.query(`ALTER TABLE \`categories\` CHANGE \`restaurantId\` \`restaurantId\` varchar(36) NULL`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` DROP FOREIGN KEY \`FK_d56e5ccc298e8bf721f75a7eb96\``);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` CHANGE \`description\` \`description\` text NULL`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` CHANGE \`imageUrl\` \`imageUrl\` varchar(255) NULL`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` CHANGE \`categoryId\` \`categoryId\` varchar(36) NULL`);
+        await queryRunner.query(`ALTER TABLE \`order_items\` DROP FOREIGN KEY \`FK_f1d359a55923bb45b057fbdab0d\``);
+        await queryRunner.query(`ALTER TABLE \`order_items\` DROP FOREIGN KEY \`FK_d8453d5a71e525d9b406c35aab8\``);
+        await queryRunner.query(`ALTER TABLE \`order_items\` CHANGE \`orderId\` \`orderId\` varchar(36) NULL`);
+        await queryRunner.query(`ALTER TABLE \`order_items\` CHANGE \`menuItemId\` \`menuItemId\` varchar(36) NULL`);
+        await queryRunner.query(`ALTER TABLE \`orders\` DROP FOREIGN KEY \`FK_2312cd07a04f50ba29d76c9564e\``);
+        await queryRunner.query(`ALTER TABLE \`orders\` DROP FOREIGN KEY \`FK_2a7fdd7af437285a3ef0fc8b64f\``);
+        await queryRunner.query(`ALTER TABLE \`orders\` CHANGE \`stripeSessionId\` \`stripeSessionId\` varchar(255) NULL`);
+        await queryRunner.query(`ALTER TABLE \`orders\` CHANGE \`restaurantId\` \`restaurantId\` varchar(36) NULL`);
+        await queryRunner.query(`ALTER TABLE \`orders\` CHANGE \`tableId\` \`tableId\` varchar(36) NULL`);
+        await queryRunner.query(`ALTER TABLE \`tables\` DROP FOREIGN KEY \`FK_94e0a6541322cecd437cd841701\``);
+        await queryRunner.query(`ALTER TABLE \`tables\` CHANGE \`restaurantId\` \`restaurantId\` varchar(36) NULL`);
+        await queryRunner.query(`ALTER TABLE \`subscriptions\` DROP FOREIGN KEY \`FK_8efcb4b7bc1122ed19df1897d22\``);
+        await queryRunner.query(`ALTER TABLE \`subscriptions\` CHANGE \`currentPeriodEnd\` \`currentPeriodEnd\` timestamp NULL`);
+        await queryRunner.query(`ALTER TABLE \`subscriptions\` CHANGE \`restaurantId\` \`restaurantId\` varchar(36) NULL`);
+        await queryRunner.query(`ALTER TABLE \`restaurants\` CHANGE \`address\` \`address\` varchar(255) NULL`);
+        await queryRunner.query(`ALTER TABLE \`restaurants\` CHANGE \`phoneNumber\` \`phoneNumber\` varchar(255) NULL`);
+        await queryRunner.query(`ALTER TABLE \`restaurants\` CHANGE \`logoUrl\` \`logoUrl\` varchar(255) NULL`);
+        await queryRunner.query(`ALTER TABLE \`restaurants\` CHANGE \`stripeAccountId\` \`stripeAccountId\` varchar(255) NULL`);
+        await queryRunner.query(`ALTER TABLE \`users\` DROP FOREIGN KEY \`FK_4ca7f2f579cda8a6158c7fc1650\``);
+        await queryRunner.query(`ALTER TABLE \`users\` CHANGE \`restaurantId\` \`restaurantId\` varchar(36) NULL`);
+        await queryRunner.query(`ALTER TABLE \`categories\` ADD CONSTRAINT \`FK_fe8e7d37475de7eb2f8f83a6da0\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` ADD CONSTRAINT \`FK_d56e5ccc298e8bf721f75a7eb96\` FOREIGN KEY (\`categoryId\`) REFERENCES \`categories\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`order_items\` ADD CONSTRAINT \`FK_f1d359a55923bb45b057fbdab0d\` FOREIGN KEY (\`orderId\`) REFERENCES \`orders\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`order_items\` ADD CONSTRAINT \`FK_d8453d5a71e525d9b406c35aab8\` FOREIGN KEY (\`menuItemId\`) REFERENCES \`menu_items\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`orders\` ADD CONSTRAINT \`FK_2312cd07a04f50ba29d76c9564e\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`orders\` ADD CONSTRAINT \`FK_2a7fdd7af437285a3ef0fc8b64f\` FOREIGN KEY (\`tableId\`) REFERENCES \`tables\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`tables\` ADD CONSTRAINT \`FK_94e0a6541322cecd437cd841701\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`subscriptions\` ADD CONSTRAINT \`FK_8efcb4b7bc1122ed19df1897d22\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`users\` ADD CONSTRAINT \`FK_4ca7f2f579cda8a6158c7fc1650\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`staff_members\` ADD CONSTRAINT \`FK_e360dda42b3876dc5a856d44ca4\` FOREIGN KEY (\`userId\`) REFERENCES \`users\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`staff_members\` ADD CONSTRAINT \`FK_b87f635a2032acebd0a74246081\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`restaurant_settings\` ADD CONSTRAINT \`FK_0fbfc0e256a87208b9e3083628e\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`payments\` ADD CONSTRAINT \`FK_af929a5f2a400fdb6913b4967e1\` FOREIGN KEY (\`orderId\`) REFERENCES \`orders\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`menu_item_options\` ADD CONSTRAINT \`FK_7615f34e2b9554c8d9fe0062a79\` FOREIGN KEY (\`menuItemId\`) REFERENCES \`menu_items\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`menu_categories\` ADD CONSTRAINT \`FK_99fac3bd8f4554721f954244df0\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE CASCADE ON UPDATE NO ACTION`);
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE \`menu_categories\` DROP FOREIGN KEY \`FK_99fac3bd8f4554721f954244df0\``);
+        await queryRunner.query(`ALTER TABLE \`menu_item_options\` DROP FOREIGN KEY \`FK_7615f34e2b9554c8d9fe0062a79\``);
+        await queryRunner.query(`ALTER TABLE \`payments\` DROP FOREIGN KEY \`FK_af929a5f2a400fdb6913b4967e1\``);
+        await queryRunner.query(`ALTER TABLE \`restaurant_settings\` DROP FOREIGN KEY \`FK_0fbfc0e256a87208b9e3083628e\``);
+        await queryRunner.query(`ALTER TABLE \`staff_members\` DROP FOREIGN KEY \`FK_b87f635a2032acebd0a74246081\``);
+        await queryRunner.query(`ALTER TABLE \`staff_members\` DROP FOREIGN KEY \`FK_e360dda42b3876dc5a856d44ca4\``);
+        await queryRunner.query(`ALTER TABLE \`users\` DROP FOREIGN KEY \`FK_4ca7f2f579cda8a6158c7fc1650\``);
+        await queryRunner.query(`ALTER TABLE \`subscriptions\` DROP FOREIGN KEY \`FK_8efcb4b7bc1122ed19df1897d22\``);
+        await queryRunner.query(`ALTER TABLE \`tables\` DROP FOREIGN KEY \`FK_94e0a6541322cecd437cd841701\``);
+        await queryRunner.query(`ALTER TABLE \`orders\` DROP FOREIGN KEY \`FK_2a7fdd7af437285a3ef0fc8b64f\``);
+        await queryRunner.query(`ALTER TABLE \`orders\` DROP FOREIGN KEY \`FK_2312cd07a04f50ba29d76c9564e\``);
+        await queryRunner.query(`ALTER TABLE \`order_items\` DROP FOREIGN KEY \`FK_d8453d5a71e525d9b406c35aab8\``);
+        await queryRunner.query(`ALTER TABLE \`order_items\` DROP FOREIGN KEY \`FK_f1d359a55923bb45b057fbdab0d\``);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` DROP FOREIGN KEY \`FK_d56e5ccc298e8bf721f75a7eb96\``);
+        await queryRunner.query(`ALTER TABLE \`categories\` DROP FOREIGN KEY \`FK_fe8e7d37475de7eb2f8f83a6da0\``);
+        await queryRunner.query(`ALTER TABLE \`users\` CHANGE \`restaurantId\` \`restaurantId\` varchar(36) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`users\` ADD CONSTRAINT \`FK_4ca7f2f579cda8a6158c7fc1650\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`restaurants\` CHANGE \`stripeAccountId\` \`stripeAccountId\` varchar(255) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`restaurants\` CHANGE \`logoUrl\` \`logoUrl\` varchar(255) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`restaurants\` CHANGE \`phoneNumber\` \`phoneNumber\` varchar(255) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`restaurants\` CHANGE \`address\` \`address\` varchar(255) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`subscriptions\` CHANGE \`restaurantId\` \`restaurantId\` varchar(36) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`subscriptions\` CHANGE \`currentPeriodEnd\` \`currentPeriodEnd\` timestamp NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`subscriptions\` ADD CONSTRAINT \`FK_8efcb4b7bc1122ed19df1897d22\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`tables\` CHANGE \`restaurantId\` \`restaurantId\` varchar(36) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`tables\` ADD CONSTRAINT \`FK_94e0a6541322cecd437cd841701\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`orders\` CHANGE \`tableId\` \`tableId\` varchar(36) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`orders\` CHANGE \`restaurantId\` \`restaurantId\` varchar(36) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`orders\` CHANGE \`stripeSessionId\` \`stripeSessionId\` varchar(255) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`orders\` ADD CONSTRAINT \`FK_2a7fdd7af437285a3ef0fc8b64f\` FOREIGN KEY (\`tableId\`) REFERENCES \`tables\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`orders\` ADD CONSTRAINT \`FK_2312cd07a04f50ba29d76c9564e\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`order_items\` CHANGE \`menuItemId\` \`menuItemId\` varchar(36) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`order_items\` CHANGE \`orderId\` \`orderId\` varchar(36) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`order_items\` ADD CONSTRAINT \`FK_d8453d5a71e525d9b406c35aab8\` FOREIGN KEY (\`menuItemId\`) REFERENCES \`menu_items\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`order_items\` ADD CONSTRAINT \`FK_f1d359a55923bb45b057fbdab0d\` FOREIGN KEY (\`orderId\`) REFERENCES \`orders\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` CHANGE \`categoryId\` \`categoryId\` varchar(36) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` CHANGE \`imageUrl\` \`imageUrl\` varchar(255) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` CHANGE \`description\` \`description\` text NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` ADD CONSTRAINT \`FK_d56e5ccc298e8bf721f75a7eb96\` FOREIGN KEY (\`categoryId\`) REFERENCES \`categories\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`categories\` CHANGE \`restaurantId\` \`restaurantId\` varchar(36) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`categories\` ADD CONSTRAINT \`FK_fe8e7d37475de7eb2f8f83a6da0\` FOREIGN KEY (\`restaurantId\`) REFERENCES \`restaurants\`(\`id\`) ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE \`orders\` DROP COLUMN \`customerName\``);
+        await queryRunner.query(`ALTER TABLE \`orders\` DROP COLUMN \`type\``);
+        await queryRunner.query(`ALTER TABLE \`orders\` DROP COLUMN \`orderNumber\``);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` DROP COLUMN \`displayOrder\``);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` DROP COLUMN \`lowStockThreshold\``);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` DROP COLUMN \`stockQty\``);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` DROP COLUMN \`badgeColor\``);
+        await queryRunner.query(`ALTER TABLE \`menu_items\` DROP COLUMN \`badgeLabel\``);
+        await queryRunner.query(`DROP TABLE \`menu_categories\``);
+        await queryRunner.query(`DROP TABLE \`menu_item_options\``);
+        await queryRunner.query(`DROP TABLE \`payments\``);
+        await queryRunner.query(`DROP INDEX \`REL_0fbfc0e256a87208b9e3083628\` ON \`restaurant_settings\``);
+        await queryRunner.query(`DROP TABLE \`restaurant_settings\``);
+        await queryRunner.query(`DROP INDEX \`REL_e360dda42b3876dc5a856d44ca\` ON \`staff_members\``);
+        await queryRunner.query(`DROP TABLE \`staff_members\``);
+        await queryRunner.query(`DROP TABLE \`plans\``);
+    }
+
+}

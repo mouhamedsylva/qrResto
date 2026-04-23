@@ -3,7 +3,6 @@ import {
   IsString,
   IsOptional,
   IsEmail,
-  IsPhoneNumber,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -13,13 +12,18 @@ export class CreateRestaurantDto {
   @IsNotEmpty()
   name: string;
 
+  @ApiProperty({ example: 'Le meilleur restaurant de la ville', required: false })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
   @ApiProperty({ example: '123 Gourmet St, Food City', required: false })
   @IsString()
   @IsOptional()
   address?: string;
 
-  @ApiProperty({ example: '+33123456789', required: false })
-  @IsPhoneNumber()
+  @ApiProperty({ example: '+221776589645', required: false })
+  @IsString()
   @IsOptional()
   phoneNumber?: string;
 

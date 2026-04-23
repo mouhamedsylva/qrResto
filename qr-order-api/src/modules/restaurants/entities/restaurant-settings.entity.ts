@@ -20,6 +20,9 @@ export class RestaurantSettings {
   @Column({ default: '#FFFFFF' })
   secondaryColor: string;
 
+  @Column({ default: 'rounded' })
+  buttonStyle: string; // 'rounded' | 'square' | 'pill'
+
   @Column({ default: 'EUR' })
   currency: string;
 
@@ -34,6 +37,19 @@ export class RestaurantSettings {
 
   @Column('decimal', { precision: 5, scale: 2, default: 0 })
   taxRate: number;
+
+  @Column({ default: 20 })
+  prepTime: number; // Temps de préparation moyen en minutes
+
+  // Payment methods
+  @Column({ default: true })
+  paymentCash: boolean;
+
+  @Column({ default: true })
+  paymentCard: boolean;
+
+  @Column({ default: false })
+  paymentOnline: boolean;
 
   // --- Permissions STAFF ---
   @Column({ default: true })

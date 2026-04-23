@@ -6,7 +6,10 @@ import {
   Body,
   Param,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -92,6 +95,19 @@ export class RestaurantsController {
     return this.restaurantsService.update(id, updateRestaurantDto);
   }
 
+  @Post(':id/logo')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Mettre à jour le logo du restaurant' })
+  async uploadLogo(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.restaurantsService.updateLogo(id, file);
+  }
+
   @Get(':id/qr/:tableId')
   @ApiOperation({ summary: 'Générer un QR Code pour une table' })
   async getQRCode(@Param('id') id: string, @Param('tableId') tableId: string) {
@@ -120,6 +136,16 @@ export class RestaurantsController {
   @ApiResponse({ status: 200, description: 'Parametres recuperes.' })
   async getSettings(@Param('id') id: string) {
     return this.restaurantsService.getSettings(id);
+  }
+
+  @Get(':id/complete')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER, UserRole.MANAGER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Recuperer le restaurant avec tous ses parametres' })
+  @ApiResponse({ status: 200, description: 'Restaurant et parametres recuperes.' })
+  async getRestaurantWithSettings(@Param('id') id: string) {
+    return this.restaurantsService.getRestaurantWithSettings(id);
   }
 
   @Get(':id/stats')

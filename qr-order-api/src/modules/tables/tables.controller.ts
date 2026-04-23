@@ -122,4 +122,79 @@ export class TablesController {
   async remove(@Param('id') id: string) {
     return this.tablesService.remove(id);
   }
+
+  @Post('bulk-qr-export')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER, UserRole.MANAGER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Export en masse des QR codes' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        tableIds: { type: 'array', items: { type: 'string' } },
+        format: { type: 'string', enum: ['zip-png', 'zip-svg', 'pdf-multi', 'pdf-grid'] },
+        size: { type: 'string', enum: ['small', 'medium', 'large', 'xlarge'] },
+        customization: {
+          type: 'object',
+          properties: {
+            foregroundColor: { type: 'string' },
+            backgroundColor: { type: 'string' },
+            logoUrl: { type: 'string' },
+            text: { type: 'string' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Export généré.' })
+  async bulkQrExport(@Body() exportDto: any) {
+    return this.tablesService.bulkQrExport(exportDto);
+  }
+
+  @Post(':id/qr-custom')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER, UserRole.MANAGER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Générer un QR code personnalisé' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        foregroundColor: { type: 'string', example: '#000000' },
+        backgroundColor: { type: 'string', example: '#FFFFFF' },
+        logoUrl: { type: 'string' },
+        text: { type: 'string', example: 'Scannez pour commander' },
+        size: { type: 'string', enum: ['small', 'medium', 'large', 'xlarge'] },
+        format: { type: 'string', enum: ['png', 'svg', 'pdf'] },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'QR personnalisé généré.' })
+  async generateCustomQr(@Param('id') id: string, @Body() customization: any) {
+    return this.tablesService.generateCustomQr(id, customization);
+  }
+
+  @Post('restaurant/:restaurantId/qr-custom')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER, UserRole.MANAGER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Générer un QR code personnalisé pour le restaurant (Global)' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        foregroundColor: { type: 'string', example: '#000000' },
+        backgroundColor: { type: 'string', example: '#FFFFFF' },
+        logoUrl: { type: 'string' },
+        text: { type: 'string', example: 'Scannez pour commander' },
+        size: { type: 'string', enum: ['small', 'medium', 'large', 'xlarge'] },
+        format: { type: 'string', enum: ['png', 'svg', 'pdf'] },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'QR personnalisé généré.' })
+  async generateRestaurantCustomQr(@Param('restaurantId') restaurantId: string, @Body() customization: any) {
+    return this.tablesService.generateRestaurantCustomQr(restaurantId, customization);
+  }
 }

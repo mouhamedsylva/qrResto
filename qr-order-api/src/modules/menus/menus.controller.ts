@@ -94,6 +94,31 @@ export class MenusController {
     return this.menusService.removeCategory(id);
   }
 
+  @Post('sub-categories')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Créer une sous-catégorie' })
+  async createSubCategory(@Body() dto: any) {
+    return this.menusService.createSubCategory(dto);
+  }
+
+  @Get('sub-categories/:categoryId')
+  @ApiOperation({ summary: 'Lister les sous-catégories d\'une catégorie' })
+  async findSubCategories(@Param('categoryId') categoryId: string) {
+    return this.menusService.findSubCategories(categoryId);
+  }
+
+  @Delete('sub-categories/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Supprimer une sous-catégorie' })
+  async removeSubCategory(@Param('id') id: string) {
+    return this.menusService.removeSubCategory(id);
+  }
+
+
   @Post('items')
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER, UserRole.STAFF)
@@ -165,6 +190,26 @@ export class MenusController {
   @ApiBody({ type: ReorderItemsDto })
   async reorderItems(@Body() dto: ReorderItemsDto) {
     return this.menusService.reorderItems(dto);
+  }
+
+  @Post('categories/reorder')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Réorganiser les catégories' })
+  @ApiBody({ type: ReorderItemsDto })
+  async reorderCategories(@Body() dto: ReorderItemsDto) {
+    return this.menusService.reorderCategories(dto);
+  }
+
+  @Post('subcategories/reorder')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Réorganiser les sous-catégories' })
+  @ApiBody({ type: ReorderItemsDto })
+  async reorderSubCategories(@Body() dto: ReorderItemsDto) {
+    return this.menusService.reorderSubCategories(dto);
   }
 
   @Post('items/:id/options')

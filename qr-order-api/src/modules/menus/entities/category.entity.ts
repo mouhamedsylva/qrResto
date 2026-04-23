@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { Restaurant } from '../../restaurants/entities/restaurant.entity';
 import { MenuItem } from './menu-item.entity';
+import { SubCategory } from './sub-category.entity';
 
 @Entity('categories')
 export class Category {
@@ -25,6 +26,10 @@ export class Category {
   @ManyToOne(() => Restaurant, (restaurant) => restaurant.categories)
   restaurant: Restaurant;
 
-  @OneToMany(() => MenuItem, (menuItem) => menuItem.category)
+
+  @OneToMany(() => MenuItem, (item) => item.category)
   items: MenuItem[];
+
+  @OneToMany(() => SubCategory, (subCategory) => subCategory.category)
+  subCategories: SubCategory[];
 }

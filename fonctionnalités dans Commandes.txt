@@ -1,0 +1,27 @@
+🚨 Fonctionnel critique
+
+Données réelles — tout est en mockOrders hardcodé. Il faut brancher l'API et surtout du polling ou WebSocket pour recevoir les nouvelles commandes en temps réel sans recharger la page
+Notification sonore — une alerte audio à chaque nouvelle commande PENDING, indispensable quand le proprio n'a pas les yeux sur l'écran
+Détail d'une commande — cliquer sur une ligne pour voir le détail des articles commandés, les options choisies, les notes du client. Aujourd'hui on ne voit que itemsCount
+
+
+⚡ Opérationnel
+
+Changement de statut en un clic depuis la vue tableau — sans passer en mode kanban, un simple bouton "→ En prépa" / "→ Prête" sur chaque ligne suffit pour le service
+Minuteur par commande — chronomètre depuis l'heure de création, qui vire au rouge après X minutes. Crucial pour suivre les temps d'attente
+Notes de commande — afficher les instructions spéciales du client (allergie, sans sauce, etc.)
+Impression ticket — bouton par commande pour envoyer à l'imprimante thermique de cuisine
+
+
+📊 Métriques à enrichir
+
+Ticket moyen — totalAmount / ordersOfDay, une métrique clé qui manque
+Temps moyen de service — durée entre PENDING et COMPLETED
+Filtre par date — aujourd'hui tout est figé sur le service en cours, impossible de consulter les commandes d'hier ou de la semaine passée
+
+
+🎨 UX
+
+Vue kanban toujours visible — actuellement cachée derrière le bouton "Modifier". Pour un restaurant, le kanban est la vue principale, pas un mode édition
+Regroupement par table — voir toutes les commandes de la table T-04 ensemble plutôt qu'une liste plate
+Badge "nouvelle commande" sur l'onglet du navigateur — document.title = '🔔 Nouvelle commande!'

@@ -37,6 +37,9 @@ export class User {
   })
   role: UserRole;
 
+  @Column({ default: false })
+  isArchived: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

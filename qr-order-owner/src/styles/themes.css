@@ -1,0 +1,295 @@
+/* ============================================================
+   THEME VARIABLES - LIGHT & DARK (Night Owl inspired)
+   ============================================================ */
+
+/* Mode Clair (par défaut) */
+:root[data-theme="light"] {
+  /* Brand Colors */
+  --primary:       #D94A6A;
+  --primary-hover: #C23E5C;
+  --primary-faint: rgba(217, 74, 106, 0.10);
+
+  /* UI Surface Palette */
+  --bg:          #f1f5f9;
+  --surface-0:   #ffffff;
+  --surface-1:   #f8fafc;
+  --sidebar-bg:  #0c111d;
+  --sidebar-hover: rgba(255,255,255,0.06);
+  --sidebar-active: rgba(217, 74, 106, 0.22);
+
+  /* Text */
+  --text-900: #0f172a;
+  --text-600: #475569;
+  --text-400: #94a3b8;
+  --text-on-dark: #e2e8f0;
+
+  /* Semantic */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger:  #ef4444;
+  --info:    #6366f1;
+  --error:   #ef4444;
+
+  /* Borders */
+  --border:       rgba(15, 23, 42, 0.08);
+  --border-dark:  rgba(255,255,255,0.07);
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(15,23,42,0.04);
+  --shadow-sm: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow-md: 0 4px 8px -2px rgba(15,23,42,0.08), 0 2px 4px -1px rgba(15,23,42,0.04);
+  --shadow-lg: 0 12px 24px -6px rgba(15,23,42,0.10), 0 4px 8px -2px rgba(15,23,42,0.06);
+  --shadow-xl: 0 24px 48px -12px rgba(15,23,42,0.15);
+  --shadow-sidebar: 6px 0 40px rgba(0,0,0,0.25);
+  --shadow-primary: 0 4px 14px rgba(217,74,106,0.34);
+}
+
+/* Mode Sombre (Night Owl inspired) */
+:root[data-theme="dark"] {
+  /* Brand Colors - Plus vifs en mode sombre */
+  --primary:       #ff6b9d;
+  --primary-hover: #ff8fb5;
+  --primary-faint: rgba(255, 107, 157, 0.15);
+
+  /* UI Surface Palette - Night Owl colors */
+  --bg:          #011627;        /* Bleu nuit profond */
+  --surface-0:   #0b2942;        /* Bleu nuit moyen */
+  --surface-1:   #1d3b53;        /* Bleu nuit clair */
+  --sidebar-bg:  #01111d;        /* Presque noir bleuté */
+  --sidebar-hover: rgba(255,255,255,0.08);
+  --sidebar-active: rgba(255, 107, 157, 0.25);
+
+  /* Text - Night Owl inspired */
+  --text-900: #d6deeb;           /* Texte principal clair */
+  --text-600: #a599e9;           /* Texte secondaire violet clair */
+  --text-400: #637777;           /* Texte tertiaire gris-vert */
+  --text-on-dark: #d6deeb;
+
+  /* Semantic - Ajustés pour le mode sombre */
+  --success: #22da6e;            /* Vert plus vif */
+  --warning: #ffcb8b;            /* Orange doux */
+  --danger:  #ef5350;            /* Rouge doux */
+  --info:    #82aaff;            /* Bleu clair */
+  --error:   #ef5350;
+
+  /* Borders */
+  --border:       rgba(214, 222, 235, 0.12);
+  --border-dark:  rgba(214, 222, 235, 0.08);
+
+  /* Shadows - Plus prononcées en mode sombre */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 8px -2px rgba(0,0,0,0.5), 0 2px 4px -1px rgba(0,0,0,0.4);
+  --shadow-lg: 0 12px 24px -6px rgba(0,0,0,0.6), 0 4px 8px -2px rgba(0,0,0,0.5);
+  --shadow-xl: 0 24px 48px -12px rgba(0,0,0,0.7);
+  --shadow-sidebar: 6px 0 40px rgba(0,0,0,0.6);
+  --shadow-primary: 0 4px 14px rgba(255, 107, 157, 0.5);
+}
+
+/* Transitions pour le changement de thème */
+* {
+  transition: background-color 0.3s ease, 
+              border-color 0.3s ease, 
+              color 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+/* Ajustements spécifiques pour le mode sombre */
+:root[data-theme="dark"] body {
+  color: var(--text-900);
+  background: var(--bg);
+}
+
+:root[data-theme="dark"] .topbar {
+  background: var(--surface-0);
+  border-bottom-color: var(--border);
+}
+
+:root[data-theme="dark"] .card {
+  background: var(--surface-0);
+  border-color: var(--border);
+}
+
+:root[data-theme="dark"] .form-input {
+  background: var(--surface-1);
+  border-color: var(--border);
+  color: var(--text-900);
+}
+
+:root[data-theme="dark"] .form-input::placeholder {
+  color: var(--text-400);
+}
+
+:root[data-theme="dark"] .btn-ghost {
+  background: var(--surface-1);
+  border-color: var(--border);
+  color: var(--text-600);
+}
+
+:root[data-theme="dark"] .btn-ghost:hover {
+  background: var(--surface-0);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+:root[data-theme="dark"] .stat-card {
+  background: var(--surface-0);
+  border-color: var(--border);
+}
+
+:root[data-theme="dark"] .data-table th {
+  background: var(--surface-1);
+  border-bottom-color: var(--border);
+}
+
+:root[data-theme="dark"] .data-table td {
+  border-bottom-color: var(--border);
+}
+
+:root[data-theme="dark"] .data-table tbody tr:hover {
+  background: var(--surface-1);
+}
+
+:root[data-theme="dark"] .search-input {
+  background: var(--surface-1);
+  border-color: var(--border);
+  color: var(--text-900);
+}
+
+:root[data-theme="dark"] .search-input:focus {
+  background: var(--surface-0);
+}
+
+:root[data-theme="dark"] .icon-btn {
+  background: var(--surface-1);
+  border-color: var(--border);
+  color: var(--text-600);
+}
+
+:root[data-theme="dark"] .icon-btn:hover {
+  background: var(--surface-0);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+:root[data-theme="dark"] .user-pill {
+  background: var(--surface-1);
+  border-color: var(--border);
+}
+
+:root[data-theme="dark"] .user-pill:hover {
+  background: var(--surface-0);
+  border-color: var(--primary);
+}
+
+/* Scrollbar en mode sombre */
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--text-400);
+}
+
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-600);
+}
+
+/* Ajustements pour les badges de statut en mode sombre */
+:root[data-theme="dark"] .status-badge {
+  opacity: 1;
+  font-weight: 700;
+  border: 1px solid currentColor;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Statuts spécifiques en mode sombre - couleurs plus vives */
+:root[data-theme="dark"] .status-badge[style*="color: rgb(180, 83, 9)"],
+:root[data-theme="dark"] .status-badge[style*="color:#b45309"] {
+  color: #fbbf24 !important; /* Jaune vif pour "En attente" */
+  background: rgba(251, 191, 36, 0.15) !important;
+  border-color: #fbbf24;
+}
+
+:root[data-theme="dark"] .status-badge[style*="color: rgb(109, 40, 217)"],
+:root[data-theme="dark"] .status-badge[style*="color:#6d28d9"] {
+  color: #a78bfa !important; /* Violet clair pour "En cours" */
+  background: rgba(167, 139, 250, 0.15) !important;
+  border-color: #a78bfa;
+}
+
+:root[data-theme="dark"] .status-badge[style*="color: rgb(3, 105, 161)"],
+:root[data-theme="dark"] .status-badge[style*="color:#0369a1"] {
+  color: #38bdf8 !important; /* Bleu clair pour "Prête" */
+  background: rgba(56, 189, 248, 0.15) !important;
+  border-color: #38bdf8;
+}
+
+:root[data-theme="dark"] .status-badge[style*="color: rgb(4, 120, 87)"],
+:root[data-theme="dark"] .status-badge[style*="color:#047857"] {
+  color: #34d399 !important; /* Vert vif pour "Terminée" */
+  background: rgba(52, 211, 153, 0.15) !important;
+  border-color: #34d399;
+}
+
+:root[data-theme="dark"] .status-badge[style*="color: rgb(185, 28, 28)"],
+:root[data-theme="dark"] .status-badge[style*="color:#b91c1c"] {
+  color: #f87171 !important; /* Rouge clair pour "Annulée" */
+  background: rgba(248, 113, 113, 0.15) !important;
+  border-color: #f87171;
+}
+
+/* Badge "Active" dans TablesAndQr */
+:root[data-theme="dark"] .table-card-status.active {
+  background: rgba(52, 211, 153, 0.2) !important;
+  color: #34d399 !important;
+  border: 1px solid #34d399;
+  font-weight: 700;
+}
+
+:root[data-theme="dark"] .table-card-status.inactive {
+  background: rgba(148, 163, 184, 0.15) !important;
+  color: #94a3b8 !important;
+  border: 1px solid #64748b;
+  font-weight: 700;
+}
+
+/* Cartes de commandes en mode Kanban (Orders.tsx) */
+:root[data-theme="dark"] div[style*="background: #fff"][style*="cursor: grab"] {
+  background: var(--surface-0) !important;
+  border-color: var(--border) !important;
+}
+
+/* Table cells en mode sombre */
+:root[data-theme="dark"] .table-cell.free {
+  background: var(--surface-1);
+  border-color: var(--border);
+}
+
+:root[data-theme="dark"] .table-cell.occupied {
+  background: rgba(130, 170, 255, 0.15);
+  border-color: rgba(130, 170, 255, 0.4);
+  color: var(--info);
+}
+
+:root[data-theme="dark"] .table-cell.occupied-warm {
+  background: rgba(255, 203, 139, 0.15);
+  border-color: rgba(255, 203, 139, 0.4);
+  color: var(--warning);
+}
+
+/* Auth page en mode sombre */
+:root[data-theme="dark"] .auth-card {
+  background: var(--surface-0);
+  border-color: var(--border);
+}
+
+:root[data-theme="dark"] .auth-title {
+  color: var(--text-900);
+}
+
+:root[data-theme="dark"] .auth-subtitle {
+  color: var(--text-400);
+}
+
+/* Menu hero en mode sombre */
+:root[data-theme="dark"] .menu-hero {
+  background: radial-gradient(120% 140% at 0% 0%, rgba(255, 107, 157, 0.12) 0%, rgba(255, 107, 157, 0.03) 45%, rgba(11, 41, 66, 0.9) 100%), var(--surface-0);
+  border-color: var(--border);
+}

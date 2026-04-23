@@ -1,10 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
 import { Category } from './category.entity';
+import { SubCategory } from './sub-category.entity';
 
 @Entity('menu_items')
 export class MenuItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
 
   @Column()
   name: string;
@@ -57,9 +61,9 @@ export class MenuItem {
   @Column({ default: 0 })
   ordersCount: number;
 
-  @Column({ nullable: true })
-  subcategoryName: string;
-
   @ManyToOne(() => Category, (category) => category.items, { onDelete: 'CASCADE' })
   category: Category;
+
+  @ManyToOne(() => SubCategory, (subCategory) => subCategory.items, { nullable: true, onDelete: 'SET NULL' })
+  subCategory: SubCategory;
 }

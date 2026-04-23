@@ -8,12 +8,14 @@ import { Order } from '../orders/entities/order.entity';
 import { User } from '../users/entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { Table } from '../tables/entities/table.entity';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Restaurant, RestaurantSettings, Order, User]),
     TypeOrmModule.forFeature([Table]),
     AuthModule,
+    StorageModule,
   ],
 
   controllers: [RestaurantsController],

@@ -9,6 +9,7 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { Between } from 'typeorm';
 import * as QRCode from 'qrcode';
 import { Table } from '../tables/entities/table.entity';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class RestaurantsService {
@@ -23,6 +24,7 @@ export class RestaurantsService {
     private userRepository: Repository<User>,
     @InjectRepository(Table)
     private tableRepository: Repository<Table>,
+    private storageService: StorageService,
   ) {}
 
   private formatTrendPercent(current: number, previous: number): number {
@@ -86,12 +88,28 @@ export class RestaurantsService {
     if (!restaurant) {
       throw new NotFoundException(`Restaurant with ID ${id} not found`);
     }
+    
+    // Filter out inactive items for client consumption
+    if (restaurant.categories) {
+      restaurant.categories = restaurant.categories.map(category => ({
+        ...category,
+        items: category.items ? category.items.filter(item => item.isActive) : [],
+      }));
+    }
+    
     return restaurant;
   }
 
   async update(id: string, updateRestaurantDto: any) {
     await this.restaurantRepository.update(id, updateRestaurantDto);
     return this.findOne(id);
+  }
+
+  async updateLogo(id: string, file: Express.Multer.File) {
+    const restaurant = await this.findOne(id);
+    const logoUrl = await this.storageService.uploadFile(file, 'uploads/logos');
+    restaurant.logoUrl = logoUrl;
+    return this.restaurantRepository.save(restaurant);
   }
 
   async generateQRCode(restaurantId: string, tableId: string) {
@@ -130,6 +148,55 @@ export class RestaurantsService {
     }
 
     return settings;
+  }
+
+  async getRestaurantWithSettings(restaurantId: string) {
+    const restaurant = await this.restaurantRepository.findOne({
+      where: { id: restaurantId },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException(`Restaurant with ID ${restaurantId} not found`);
+    }
+
+    const settings = await this.getSettings(restaurantId);
+
+    return {
+      restaurant: {
+        id: restaurant.id,
+        name: restaurant.name,
+        description: restaurant.description,
+        address: restaurant.address,
+        phoneNumber: restaurant.phoneNumber,
+        email: restaurant.email,
+        logoUrl: restaurant.logoUrl,
+        isActive: restaurant.isActive,
+      },
+      settings: {
+        primaryColor: settings.primaryColor,
+        secondaryColor: settings.secondaryColor,
+        buttonStyle: settings.buttonStyle,
+        currency: settings.currency,
+        language: settings.language,
+        isOrderingEnabled: settings.isOrderingEnabled,
+        isTaxIncluded: settings.isTaxIncluded,
+        taxRate: settings.taxRate,
+        prepTime: settings.prepTime,
+        paymentMethods: {
+          cash: settings.paymentCash,
+          card: settings.paymentCard,
+          online: settings.paymentOnline,
+        },
+        permissions: {
+          managerCanSeeStats: settings.managerCanSeeStats,
+          managerCanEditMenu: settings.managerCanEditMenu,
+          managerCanManageOrders: settings.managerCanManageOrders,
+          managerCanManageStaff: settings.managerCanManageStaff,
+          staffCanEditMenu: settings.staffCanEditMenu,
+          staffCanManageOrders: settings.staffCanManageOrders,
+        },
+      },
+    };
   }
 
   async getDashboardStats(restaurantId: string) {

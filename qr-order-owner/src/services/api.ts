@@ -1,7 +1,16 @@
 import axios from 'axios';
 
+const getBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // Fallback to dynamic hostname for local network access
+  const hostname = window.location.hostname;
+  return `http://${hostname}:3000/api/v1`;
+};
+
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api/v1',
+  baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Check, Send } from 'lucide-react';
 
 type TeamMember = {
@@ -10,6 +11,8 @@ type TeamMember = {
   email: string;
   role: 'OWNER' | 'MANAGER' | 'STAFF' | string;
   restaurantId?: string | null;
+  archivedAt?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
 };
 
 type TeamMemberDetails = {
@@ -25,14 +28,21 @@ type TeamMemberDetails = {
 
 const Staff: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [team, setTeam] = useState<TeamMember[]>([]);
+  const [archivedTeam, setArchivedTeam] = useState<TeamMember[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showInvite, setShowInvite] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editingRole, setEditingRole] = useState<'MANAGER' | 'STAFF'>('STAFF');
+  const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
+  const [editingStatus, setEditingStatus] = useState<'ACTIVE' | 'INACTIVE' | 'ON_LEAVE'>('ACTIVE');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [confirmAction, setConfirmAction] = useState<{
     title: string;
     message: string;
@@ -69,14 +79,33 @@ const Staff: React.FC = () => {
       setSelectedIds([]);
     } catch (error) {
       console.error('Erreur chargement equipe', error);
-      setFeedback("Impossible de charger l'equipe.");
+      setFeedback(t('staff.cannotLoadTeam'));
     } finally {
       setIsLoading(false);
     }
   };
 
+  const loadArchivedTeam = async () => {
+    if (!restaurantId) return;
+    try {
+      const response = await api.get<TeamMember[]>(`/users/team/${restaurantId}/archived`);
+      const payload = response.data;
+      const members = Array.isArray(payload)
+        ? payload
+        : Array.isArray((payload as any)?.data)
+          ? (payload as any).data
+          : [];
+
+      setArchivedTeam(members);
+    } catch (error) {
+      console.error('Erreur chargement membres archives', error);
+      setFeedback(t('staff.cannotLoadTeam'));
+    }
+  };
+
   useEffect(() => {
     void loadTeam();
+    void loadArchivedTeam();
   }, [restaurantId]);
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -87,8 +116,8 @@ const Staff: React.FC = () => {
       const generatedPassword = response.data?.generatedPassword;
       const message =
         generatedPassword
-          ? `Membre invite. Mot de passe temporaire: ${generatedPassword}`
-          : 'Membre invite avec succes.';
+          ? t('staff.memberInvitedWithPassword').replace('{password}', generatedPassword)
+          : t('staff.memberInvited');
       setFeedback(message);
       setSuccessMessage(message);
       setInvite({ name: '', email: '', role: 'STAFF' });
@@ -96,19 +125,21 @@ const Staff: React.FC = () => {
       await loadTeam();
     } catch (error) {
       console.error("Erreur invitation membre d'equipe", error);
-      setFeedback("Impossible d'inviter ce membre.");
+      setFeedback(t('staff.cannotInvite'));
     }
   };
 
   const handleArchive = async (id: string) => {
+    if (!restaurantId) return;
     try {
-      await api.delete(`/staff/${id}`);
-      setFeedback('Membre archive avec succes.');
-      setSuccessMessage('Membre archive avec succes.');
+      await api.post(`/users/team/${restaurantId}/archive-bulk`, { ids: [id] });
+      setFeedback(t('staff.memberArchived'));
+      setSuccessMessage(t('staff.memberArchived'));
       await loadTeam();
+      await loadArchivedTeam();
     } catch (error) {
-      console.error('Erreur suppression membre', error);
-      setFeedback("Impossible d'archiver ce membre.");
+      console.error('Erreur archivage membre', error);
+      setFeedback(t('staff.cannotArchive'));
     }
   };
 
@@ -117,19 +148,40 @@ const Staff: React.FC = () => {
     setEditingRole(member.role === 'MANAGER' ? 'MANAGER' : 'STAFF');
   };
 
+  const handleEditStatus = (member: TeamMember) => {
+    setEditingStatusId(member.id);
+    setEditingStatus(member.status || 'ACTIVE');
+  };
+
   const handleSaveRole = async (memberId: string) => {
     if (!restaurantId) return;
     try {
       await api.put(`/users/team/${restaurantId}/${memberId}/role`, {
         role: editingRole,
       });
-      setFeedback('Role mis a jour avec succes.');
-      setSuccessMessage('Role mis a jour avec succes.');
+      setFeedback(t('staff.roleUpdated'));
+      setSuccessMessage(t('staff.roleUpdated'));
       setEditingMemberId(null);
       await loadTeam();
     } catch (error) {
       console.error('Erreur modification role', error);
-      setFeedback('Impossible de modifier le role.');
+      setFeedback(t('staff.cannotModifyRole'));
+    }
+  };
+
+  const handleSaveStatus = async (memberId: string) => {
+    if (!restaurantId) return;
+    try {
+      await api.put(`/users/team/${restaurantId}/${memberId}/status`, {
+        status: editingStatus,
+      });
+      setFeedback(t('staff.statusUpdated'));
+      setSuccessMessage(t('staff.statusUpdated'));
+      setEditingStatusId(null);
+      await loadTeam();
+    } catch (error) {
+      console.error('Erreur modification statut', error);
+      setFeedback(t('staff.cannotModifyStatus'));
     }
   };
 
@@ -143,7 +195,7 @@ const Staff: React.FC = () => {
       setTemporaryPassword(null);
     } catch (error) {
       console.error('Erreur details membre', error);
-      setFeedback("Impossible de recuperer les details du membre.");
+      setFeedback(t('staff.cannotGetDetails'));
     }
   };
 
@@ -189,11 +241,11 @@ const Staff: React.FC = () => {
   };
 
   const toggleAll = () => {
-    if (selectedIds.length === team.length) {
+    if (selectedIds.length === paginatedList.length) {
       setSelectedIds([]);
       return;
     }
-    setSelectedIds(team.map((member) => member.id));
+    setSelectedIds(paginatedList.map((member) => member.id));
   };
 
   const normalizeRole = (raw: string): 'MANAGER' | 'STAFF' => {
@@ -210,7 +262,7 @@ const Staff: React.FC = () => {
     );
 
     if (validRows.length === 0) {
-      setFeedback('Aucune ligne valide a importer (name, email requis).');
+      setFeedback(t('staff.csvEmpty'));
       return;
     }
 
@@ -232,12 +284,14 @@ const Staff: React.FC = () => {
       const failCount = response.data?.failCount || 0;
 
       setFeedback(
-        `Import termine. ${successCount} membre(s) ajoutes, ${failCount} echec(s).`,
+        t('staff.importComplete')
+          .replace('{success}', String(successCount))
+          .replace('{fail}', String(failCount))
       );
       await loadTeam();
     } catch (error) {
       console.error('Erreur import equipe', error);
-      setFeedback("Impossible d'importer le fichier.");
+      setFeedback(t('staff.cannotInvite'));
     } finally {
       setIsBulkProcessing(false);
     }
@@ -247,7 +301,7 @@ const Staff: React.FC = () => {
     const text = await file.text();
     const lines = text.split(/\r?\n/).filter((line) => line.trim());
     if (lines.length < 2) {
-      setFeedback('Fichier CSV vide ou invalide.');
+      setFeedback(t('staff.csvEmpty'));
       return;
     }
     const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
@@ -264,14 +318,12 @@ const Staff: React.FC = () => {
 
   const handleImportExcel = async (file: File) => {
     if (!file) return;
-    setFeedback(
-      "Import Excel temporairement indisponible sur cet environnement. Utilisez l'import CSV pour l'instant.",
-    );
+    setFeedback(t('staff.excelUnavailable'));
   };
 
   const handleArchiveSelected = async () => {
     if (selectedIds.length === 0) {
-      setFeedback('Selectionnez au moins un membre a archiver.');
+      setFeedback(t('staff.selectAtLeastOne'));
       return;
     }
 
@@ -284,15 +336,68 @@ const Staff: React.FC = () => {
       const successCount = response.data?.archivedCount || 0;
       const failCount = Math.max(0, selectedIds.length - successCount);
       setFeedback(
-        `Archivage termine. ${successCount} membre(s) archives, ${failCount} echec(s).`,
+        t('staff.archiveComplete')
+          .replace('{success}', String(successCount))
+          .replace('{fail}', String(failCount))
       );
       setSuccessMessage(
-        `Archivage termine. ${successCount} membre(s) archives.`,
+        t('staff.archiveComplete')
+          .replace('{success}', String(successCount))
+          .replace('{fail}', String(failCount))
       );
       await loadTeam();
+      await loadArchivedTeam();
     } catch (error) {
       console.error('Erreur archivage multiple', error);
-      setFeedback("Impossible d'archiver la selection.");
+      setFeedback(t('staff.cannotArchive'));
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleUnarchive = async (id: string) => {
+    if (!restaurantId) return;
+    try {
+      await api.post(`/users/team/${restaurantId}/${id}/unarchive`);
+      setFeedback(t('staff.memberUnarchived'));
+      setSuccessMessage(t('staff.memberUnarchived'));
+      await loadTeam();
+      await loadArchivedTeam();
+    } catch (error) {
+      console.error('Erreur desarchivage membre', error);
+      setFeedback(t('staff.cannotArchive'));
+    }
+  };
+
+  const handleUnarchiveSelected = async () => {
+    if (selectedIds.length === 0) {
+      setFeedback(t('staff.selectAtLeastOne'));
+      return;
+    }
+
+    setIsBulkProcessing(true);
+    try {
+      const response = await api.post(
+        `/users/team/${restaurantId}/unarchive-bulk`,
+        { ids: selectedIds },
+      );
+      const successCount = response.data?.unarchivedCount || 0;
+      const failCount = Math.max(0, selectedIds.length - successCount);
+      setFeedback(
+        t('staff.unarchiveComplete')
+          .replace('{success}', String(successCount))
+          .replace('{fail}', String(failCount))
+      );
+      setSuccessMessage(
+        t('staff.unarchiveComplete')
+          .replace('{success}', String(successCount))
+          .replace('{fail}', String(failCount))
+      );
+      await loadTeam();
+      await loadArchivedTeam();
+    } catch (error) {
+      console.error('Erreur desarchivage multiple', error);
+      setFeedback(t('staff.cannotArchive'));
     } finally {
       setIsBulkProcessing(false);
     }
@@ -305,22 +410,81 @@ const Staff: React.FC = () => {
   }, [successMessage]);
 
   const roleLabel = (role: string) => {
-    if (role === 'OWNER') return 'Proprietaire';
-    if (role === 'MANAGER') return 'Manager';
-    return 'Staff';
+    if (role === 'OWNER') return t('staff.owner');
+    if (role === 'MANAGER') return t('staff.manager');
+    return t('staff.staffMember');
   };
 
+  const statusLabel = (status?: string) => {
+    if (status === 'INACTIVE') return t('staff.inactive');
+    if (status === 'ON_LEAVE') return t('staff.onLeave');
+    return t('staff.active');
+  };
+
+  const statusColor = (status?: string) => {
+    if (status === 'INACTIVE') return { background: 'rgba(239,68,68,0.10)', color: '#dc2626' };
+    if (status === 'ON_LEAVE') return { background: 'rgba(251,191,36,0.10)', color: '#f59e0b' };
+    return { background: 'rgba(16,185,129,0.10)', color: '#059669' };
+  };
+
+  // Pagination
+  const currentList = showArchived ? archivedTeam : team;
+  const totalPages = Math.ceil(currentList.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedList = currentList.slice(startIndex, endIndex);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    setSelectedIds([]);
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+      setSelectedIds([]);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+      setSelectedIds([]);
+    }
+  };
+
+  // Réinitialiser la page lors du changement de vue
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedIds([]);
+  }, [showArchived]);
+
   return (
-    <Layout title="Equipe" subtitle="Gestion des membres et des invitations.">
+    <Layout title={t('staff.team')} subtitle={t('staff.teamManagement')}>
       <div className="card" style={{ padding: 20 }}>
         <div className="card-header">
-          <span className="card-title">Membres de l'equipe</span>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => setShowInvite((prev) => !prev)}
-          >
-            Inviter un membre
-          </button>
+          <span className="card-title">
+            {showArchived ? t('staff.archivedMembers') : t('staff.activeMembers')}
+          </span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setShowArchived(!showArchived);
+                setSelectedIds([]);
+              }}
+            >
+              {showArchived ? t('staff.viewActive') : `${t('staff.viewArchived')} (${archivedTeam.length})`}
+            </button>
+            {!showArchived && (
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => setShowInvite((prev) => !prev)}
+              >
+                {t('staff.inviteMember')}
+              </button>
+            )}
+          </div>
         </div>
         <div
           style={{
@@ -332,35 +496,54 @@ const Staff: React.FC = () => {
           }}
         >
           <span className="text-xs text-lighter">
-            Actions multiples{selectedIds.length ? ` (${selectedIds.length} selectionnes)` : ''}
+            {t('staff.multipleActions')}{selectedIds.length ? ` (${selectedIds.length} ${t('staff.selected')})` : ''}
           </span>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => document.getElementById('staff-import-csv-input')?.click()}
-            disabled={isBulkProcessing}
-          >
-            Import CSV
-          </button>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() => document.getElementById('staff-import-excel-input')?.click()}
-            disabled={isBulkProcessing}
-          >
-            Import Excel
-          </button>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={() =>
-              setConfirmAction({
-                title: 'Archiver la selection ?',
-                message: `Vous allez archiver ${selectedIds.length} membre(s).`,
-                action: async () => handleArchiveSelected(),
-              })
-            }
-            disabled={isBulkProcessing}
-          >
-            Archiver selection
-          </button>
+          {!showArchived && (
+            <>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => document.getElementById('staff-import-csv-input')?.click()}
+                disabled={isBulkProcessing}
+              >
+                {t('staff.importCsv')}
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => document.getElementById('staff-import-excel-input')?.click()}
+                disabled={isBulkProcessing}
+              >
+                {t('staff.importExcel')}
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() =>
+                  setConfirmAction({
+                    title: t('staff.archiveSelectionConfirm'),
+                    message: t('staff.archiveSelectionMessage').replace('{count}', String(selectedIds.length)),
+                    action: async () => handleArchiveSelected(),
+                  })
+                }
+                disabled={isBulkProcessing}
+              >
+                {t('staff.archiveSelection')}
+              </button>
+            </>
+          )}
+          {showArchived && (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() =>
+                setConfirmAction({
+                  title: t('staff.unarchiveSelectionConfirm'),
+                  message: t('staff.unarchiveSelectionMessage').replace('{count}', String(selectedIds.length)),
+                  action: async () => handleUnarchiveSelected(),
+                })
+              }
+              disabled={isBulkProcessing}
+            >
+              {t('staff.unarchiveSelection')}
+            </button>
+          )}
           <input
             id="staff-import-csv-input"
             type="file"
@@ -401,14 +584,14 @@ const Staff: React.FC = () => {
             <input
               value={invite.name}
               onChange={(e) => setInvite((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Nom"
+              placeholder={t('staff.name')}
               style={{ height: 34, borderRadius: 8, border: '1px solid var(--border)', padding: '0 10px' }}
             />
             <input
               type="email"
               value={invite.email}
               onChange={(e) => setInvite((prev) => ({ ...prev, email: e.target.value }))}
-              placeholder="Email"
+              placeholder={t('staff.email')}
               style={{ height: 34, borderRadius: 8, border: '1px solid var(--border)', padding: '0 10px' }}
             />
             <select
@@ -416,11 +599,11 @@ const Staff: React.FC = () => {
               onChange={(e) => setInvite((prev) => ({ ...prev, role: e.target.value }))}
               style={{ height: 34, borderRadius: 8, border: '1px solid var(--border)', padding: '0 10px' }}
             >
-              <option value="STAFF">Staff</option>
-              <option value="MANAGER">Manager</option>
+              <option value="STAFF">{t('staff.staffMember')}</option>
+              <option value="MANAGER">{t('staff.manager')}</option>
             </select>
             <button className="btn btn-primary btn-sm" type="submit">
-              Envoyer
+              {t('staff.send')}
             </button>
           </form>
         )}
@@ -436,19 +619,20 @@ const Staff: React.FC = () => {
                 <th>
                   <input
                     type="checkbox"
-                    checked={team.length > 0 && selectedIds.length === team.length}
+                    checked={paginatedList.length > 0 && selectedIds.length === paginatedList.length}
                     onChange={toggleAll}
                   />
                 </th>
-                <th>Nom</th>
-                <th>Role</th>
-                <th>Email</th>
-                <th>Statut</th>
-                <th>Action</th>
+                <th>{t('staff.nameColumn')}</th>
+                <th>{t('staff.roleColumn')}</th>
+                <th>{t('staff.emailColumn')}</th>
+                <th>{t('staff.statusColumn')}</th>
+                {showArchived && <th>{t('staff.archivedOn')}</th>}
+                <th>{t('staff.action')}</th>
               </tr>
             </thead>
             <tbody>
-              {team.map((member) => (
+              {!showArchived && paginatedList.map((member) => (
                 <tr key={member.id}>
                   <td>
                     <input
@@ -461,13 +645,32 @@ const Staff: React.FC = () => {
                   <td>{roleLabel(member.role)}</td>
                   <td>{member.email}</td>
                   <td>
-                    <span className="status-badge" style={{ background: 'rgba(16,185,129,0.10)', color: '#059669' }}>
-                      Actif
-                    </span>
+                    {editingStatusId === member.id ? (
+                      <select
+                        value={editingStatus}
+                        onChange={(e) =>
+                          setEditingStatus(e.target.value as 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE')
+                        }
+                        style={{
+                          height: 30,
+                          borderRadius: 8,
+                          border: '1px solid var(--border)',
+                          padding: '0 8px',
+                        }}
+                      >
+                        <option value="ACTIVE">{t('staff.active')}</option>
+                        <option value="INACTIVE">{t('staff.inactive')}</option>
+                        <option value="ON_LEAVE">{t('staff.onLeave')}</option>
+                      </select>
+                    ) : (
+                      <span className="status-badge" style={statusColor(member.status)}>
+                        {statusLabel(member.status)}
+                      </span>
+                    )}
                   </td>
                   <td>
                     {member.role !== 'OWNER' ? (
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         {editingMemberId === member.id ? (
                           <>
                             <select
@@ -482,20 +685,35 @@ const Staff: React.FC = () => {
                                 padding: '0 8px',
                               }}
                             >
-                              <option value="STAFF">Staff</option>
-                              <option value="MANAGER">Manager</option>
+                              <option value="STAFF">{t('staff.staffMember')}</option>
+                              <option value="MANAGER">{t('staff.manager')}</option>
                             </select>
                             <button
                               className="btn btn-primary btn-sm"
                               onClick={() => void handleSaveRole(member.id)}
                             >
-                              Sauver
+                              {t('staff.save')}
                             </button>
                             <button
                               className="btn btn-ghost btn-sm"
                               onClick={() => setEditingMemberId(null)}
                             >
-                              Annuler
+                              {t('common.cancel')}
+                            </button>
+                          </>
+                        ) : editingStatusId === member.id ? (
+                          <>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => void handleSaveStatus(member.id)}
+                            >
+                              {t('staff.save')}
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => setEditingStatusId(null)}
+                            >
+                              {t('common.cancel')}
                             </button>
                           </>
                         ) : (
@@ -504,26 +722,31 @@ const Staff: React.FC = () => {
                               className="btn btn-ghost btn-sm"
                               onClick={() => handleEditRole(member)}
                             >
-                              Modifier
+                              {t('staff.modifyRole')}
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => handleEditStatus(member)}
+                            >
+                              {t('staff.modifyStatus')}
                             </button>
                             <button
                               className="btn btn-ghost btn-sm"
                               onClick={() => void handleViewDetails(member.id)}
                             >
-                              Details
+                              {t('staff.details')}
                             </button>
                             <button
                               className="btn btn-ghost btn-sm"
                               onClick={() =>
                                 setConfirmAction({
-                                  title: 'Archiver ce membre ?',
-                                  message:
-                                    'Ce membre sera retire de la liste active.',
+                                  title: t('staff.archiveMember'),
+                                  message: t('staff.archiveMemberMessage'),
                                   action: async () => handleArchive(member.id),
                                 })
                               }
                             >
-                              Archiver
+                              {t('staff.archive')}
                             </button>
                           </>
                         )}
@@ -534,16 +757,105 @@ const Staff: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {!isLoading && team.length === 0 && (
+              {showArchived && paginatedList.map((member) => (
+                <tr key={member.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(member.id)}
+                      onChange={() => toggleSelected(member.id)}
+                    />
+                  </td>
+                  <td style={{ fontWeight: 600 }}>{member.name}</td>
+                  <td>{roleLabel(member.role)}</td>
+                  <td>{member.email}</td>
+                  <td>
+                    <span className="status-badge" style={{ background: 'rgba(156,163,175,0.10)', color: '#6b7280' }}>
+                      {t('staff.archived')}
+                    </span>
+                  </td>
+                  <td>
+                    {member.archivedAt ? new Date(member.archivedAt).toLocaleDateString('fr-FR') : '-'}
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() =>
+                        setConfirmAction({
+                          title: t('staff.unarchiveMember'),
+                          message: t('staff.unarchiveMemberMessage'),
+                          action: async () => handleUnarchive(member.id),
+                        })
+                      }
+                    >
+                      {t('staff.unarchive')}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!isLoading && !showArchived && paginatedList.length === 0 && currentList.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-500)' }}>
-                    Aucun membre dans l'equipe.
+                    {t('staff.noMembers')}
+                  </td>
+                </tr>
+              )}
+              {!isLoading && showArchived && paginatedList.length === 0 && currentList.length === 0 && (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-500)' }}>
+                    {t('staff.noArchivedMembers')}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+        {currentList.length > itemsPerPage && (
+          <div className="pagination-container" style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            padding: '16px 20px',
+            borderTop: '1px solid var(--border)'
+          }}>
+            <div style={{ fontSize: 14, color: 'var(--text-600)' }}>
+              {t('staff.showing')
+                .replace('{start}', String(startIndex + 1))
+                .replace('{end}', String(Math.min(endIndex, currentList.length)))
+                .replace('{total}', String(currentList.length))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                style={{ opacity: currentPage === 1 ? 0.5 : 1 }}
+              >
+                {t('staff.previous')}
+              </button>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    className={`btn btn-sm ${page === currentPage ? 'btn-primary' : 'btn-ghost'}`}
+                    onClick={() => goToPage(page)}
+                    style={{ minWidth: 36 }}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}
+              >
+                {t('staff.next')}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       {confirmAction && (
         <div className="confirm-modal-backdrop">

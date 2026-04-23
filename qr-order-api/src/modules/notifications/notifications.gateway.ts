@@ -38,7 +38,7 @@ export class NotificationsGateway
     this.server.to(`restaurant_${restaurantId}`).emit('newOrder', order);
   }
 
-  notifyOrderStatusUpdate(orderId: string, status: string) {
-    this.server.emit('orderStatusUpdated', { orderId, status });
+  notifyOrderStatusUpdate(restaurantId: string, orderId: string, status: string) {
+    this.server.to(`restaurant_${restaurantId}`).emit('orderStatusUpdated', { orderId, status });
   }
 }

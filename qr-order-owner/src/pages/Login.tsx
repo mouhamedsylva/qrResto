@@ -4,14 +4,24 @@ import { Zap, AlertCircle, Loader2, Check } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
+interface FieldErrors {
+  email?: string;
+  password?: string;
+}
+
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [touched, setTouched] = useState<{ email: boolean; password: boolean }>({
+    email: false,
+    password: false,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
-  
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -24,10 +34,10 @@ const Login: React.FC = () => {
     {
       title: 'Boostez votre performance chaque jour',
       description:
-        'Suivez vos KPI en temps reel, visualisez les tendances et prenez de meilleures décisions en quelques secondes.',
+        'Suivez vos KPI en temps réel, visualisez les tendances et prenez de meilleures décisions en quelques secondes.',
     },
     {
-      title: 'Une experience fluide pour votre equipe',
+      title: 'Une experience fluide pour votre équipe',
       description:
         'Invitez vôtre équipe, gérez les rôles et centralisez toutes les actions sans friction.',
     },
@@ -37,28 +47,72 @@ const Login: React.FC = () => {
     const sliderTimer = setInterval(() => {
       setSlideIndex((prev) => (prev + 1) % textSlides.length);
     }, 4200);
-
     return () => clearInterval(sliderTimer);
   }, [textSlides.length]);
+
+  // --- Validation logic ---
+  const validateField = (name: 'email' | 'password', value: string): string => {
+    if (name === 'email') {
+      if (!value.trim()) return 'L\'adresse email est requise.';
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(value)) return 'Veuillez entrer une adresse email valide.';
+    }
+    if (name === 'password') {
+      if (!value) return 'Le mot de passe est requis.';
+      if (value.length < 6) return 'Le mot de passe doit contenir au moins 6 caractères.';
+    }
+    return '';
+  };
+
+  const validateAll = (): boolean => {
+    const errors: FieldErrors = {
+      email: validateField('email', email),
+      password: validateField('password', password),
+    };
+    setFieldErrors(errors);
+    setTouched({ email: true, password: true });
+    return !errors.email && !errors.password;
+  };
+
+  // --- Handlers ---
+  const handleBlur = (name: 'email' | 'password') => {
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    setFieldErrors((prev) => ({
+      ...prev,
+      [name]: validateField(name, name === 'email' ? email : password),
+    }));
+  };
+
+  const handleChange = (name: 'email' | 'password', value: string) => {
+    if (name === 'email') setEmail(value);
+    else setPassword(value);
+
+    // Clear the error live once the field becomes valid
+    if (touched[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: validateField(name, value) }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsSubmitting(true);
 
+    if (!validateAll()) return; // Stop if client-side validation fails
+
+    setIsSubmitting(true);
     try {
       const response = await api.post('/auth/login', { email, password });
       const { access_token, user } = response.data;
-      
-      // Show Success Modal
+
       setShowSuccess(true);
-      
-      // Authenticate & Redirect after delay
+
       setTimeout(() => {
         login(access_token, user);
-        navigate('/');
+        let path = '/';
+        if (user?.role === 'STAFF') path = '/orders';
+        else if (user?.role === 'MANAGER') path = '/';
+        navigate(path);
       }, 1500);
-      
     } catch (err: any) {
       console.error('Login error:', err);
       if (!err.response) {
@@ -93,7 +147,7 @@ const Login: React.FC = () => {
               </div>
             </div>
             <h2 className="auth-title">Bon retour !</h2>
-            <p className="auth-subtitle">Connectez-vous pour gerer votre etablissement</p>
+            <p className="auth-subtitle">Connectez-vous pour gérer votre établissement</p>
           </div>
 
           {error && (
@@ -103,18 +157,22 @@ const Login: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
               <label className="form-label" htmlFor="email">Adresse Email</label>
               <input
                 id="email"
                 type="email"
-                className="form-input"
+                className={`form-input ${touched.email && fieldErrors.email ? 'form-input--error' : ''}`}
                 placeholder="votre@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => handleChange('email', e.target.value)}
+                onBlur={() => handleBlur('email')}
                 required
               />
+              {touched.email && fieldErrors.email && (
+                <p className="form-field-error">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div className="form-group">
@@ -122,17 +180,21 @@ const Login: React.FC = () => {
               <input
                 id="password"
                 type="password"
-                className="form-input"
+                className={`form-input ${touched.password && fieldErrors.password ? 'form-input--error' : ''}`}
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => handleChange('password', e.target.value)}
+                onBlur={() => handleBlur('password')}
                 required
               />
+              {touched.password && fieldErrors.password && (
+                <p className="form-field-error">{fieldErrors.password}</p>
+              )}
             </div>
 
-            <button 
-              type="submit" 
-              className="btn btn-primary btn-auth" 
+            <button
+              type="submit"
+              className="btn btn-primary btn-auth"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

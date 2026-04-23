@@ -37,7 +37,8 @@ async function bootstrap() {
     .map((origin) => normalizeOrigin(origin as string));
 
   const allowedOrigins = new Set([...configuredOrigins, ...fallbackOrigins]);
-  const localhostPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+  // Allow localhost and local network IP addresses
+  const localNetworkPattern = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/;
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -47,7 +48,7 @@ async function bootstrap() {
       if (
         !origin ||
         allowedOrigins.has(normalizedOrigin) ||
-        localhostPattern.test(normalizedOrigin)
+        localNetworkPattern.test(normalizedOrigin)
       ) {
         callback(null, true);
       } else {

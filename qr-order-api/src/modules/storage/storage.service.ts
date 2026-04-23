@@ -22,6 +22,12 @@ export class StorageService {
     writeStream.write(file.buffer);
     writeStream.end();
 
-    return `/${folder}/${fileName}`;
+    // Return path relative to uploads directory (without leading /uploads)
+    // The server already serves with /uploads prefix
+    const relativePath = folder.startsWith('uploads/') 
+      ? folder.substring('uploads/'.length) 
+      : folder;
+    
+    return `/uploads/${relativePath}/${fileName}`;
   }
 }

@@ -102,7 +102,18 @@ export class OrdersService {
 
   async updateStatus(id: string, status: OrderStatus) {
     await this.orderRepository.update(id, { status });
-    return this.findOne(id);
+    const updatedOrder = await this.findOne(id);
+    
+    // Notify clients in the restaurant room
+    if ((updatedOrder as any).restaurant?.id) {
+      this.notificationsGateway.notifyOrderStatusUpdate(
+        (updatedOrder as any).restaurant.id,
+        id,
+        status
+      );
+    }
+    
+    return updatedOrder;
   }
 
   async findAll(filter: FilterOrdersDto) {

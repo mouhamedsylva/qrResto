@@ -4,6 +4,7 @@ import { MenusController } from './menus.controller';
 import { MenusService } from './menus.service';
 import { Category } from './entities/category.entity';
 import { MenuItem } from './entities/menu-item.entity';
+import { SubCategory } from './entities/sub-category.entity';
 import { MenuItemOption } from './entities/menu-item-option.entity';
 import { MenuCategory } from './entities/menu-category.entity';
 import { AuthModule } from '../auth/auth.module';
@@ -13,6 +14,7 @@ import { StorageModule } from '../storage/storage.module';
   imports: [
     TypeOrmModule.forFeature([
       Category,
+      SubCategory,
       MenuItem,
       MenuItemOption,
       MenuCategory,

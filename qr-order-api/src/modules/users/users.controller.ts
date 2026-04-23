@@ -26,6 +26,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { ImportTeamMembersDto } from './dto/import-team-members.dto';
 import { ArchiveTeamMembersDto } from './dto/archive-team-members.dto';
 import { UpdateTeamMemberRoleDto } from './dto/update-team-member-role.dto';
+import { UpdateStaffStatusDto } from './dto/update-staff-status.dto';
 
 @ApiTags('Utilisateurs')
 @Controller('users')
@@ -91,7 +92,14 @@ export class UsersController {
   @ApiOperation({ summary: "Lister les membres d'equipe par restaurant (fallback)" })
   @ApiResponse({ status: 200, description: 'Equipe recuperee.' })
   async listTeamByRestaurant(@Param('restaurantId') restaurantId: string) {
-    return this.usersService.listTeamMembersByRestaurant(restaurantId);
+    return this.usersService.listTeamMembersByRestaurant(restaurantId, false);
+  }
+
+  @Get('team/:restaurantId/archived')
+  @ApiOperation({ summary: "Lister les membres d'equipe archivés par restaurant" })
+  @ApiResponse({ status: 200, description: 'Membres archivés récupérés.' })
+  async listArchivedTeamByRestaurant(@Param('restaurantId') restaurantId: string) {
+    return this.usersService.listArchivedTeamMembersByRestaurant(restaurantId);
   }
 
   @Post('team/:restaurantId')
@@ -178,6 +186,49 @@ export class UsersController {
     return this.usersService.archiveTeamMembersByRestaurant(
       restaurantId,
       dto.ids || [],
+    );
+  }
+
+  @Post('team/:restaurantId/:memberId/unarchive')
+  @ApiOperation({ summary: "Désarchiver un membre d'équipe" })
+  @ApiResponse({ status: 200, description: 'Membre désarchivé avec succès.' })
+  async unarchiveTeamMemberByRestaurant(
+    @Param('restaurantId') restaurantId: string,
+    @Param('memberId') memberId: string,
+  ) {
+    return this.usersService.unarchiveTeamMemberByRestaurant(
+      restaurantId,
+      memberId,
+    );
+  }
+
+  @Post('team/:restaurantId/unarchive-bulk')
+  @ApiOperation({ summary: "Désarchiver plusieurs membres d'équipe" })
+  @ApiBody({ type: ArchiveTeamMembersDto })
+  @ApiResponse({ status: 200, description: 'Désarchivage multiple terminé.' })
+  async unarchiveTeamMembersByRestaurant(
+    @Param('restaurantId') restaurantId: string,
+    @Body() dto: ArchiveTeamMembersDto,
+  ) {
+    return this.usersService.unarchiveTeamMembersByRestaurant(
+      restaurantId,
+      dto.ids || [],
+    );
+  }
+
+  @Put('team/:restaurantId/:memberId/status')
+  @ApiOperation({ summary: "Modifier le statut d'un membre (ACTIVE/INACTIVE/ON_LEAVE)" })
+  @ApiBody({ type: UpdateStaffStatusDto })
+  @ApiResponse({ status: 200, description: 'Statut membre mis à jour.' })
+  async updateStaffMemberStatus(
+    @Param('restaurantId') restaurantId: string,
+    @Param('memberId') memberId: string,
+    @Body() dto: UpdateStaffStatusDto,
+  ) {
+    return this.usersService.updateStaffMemberStatus(
+      restaurantId,
+      memberId,
+      dto.status,
     );
   }
 

@@ -162,13 +162,13 @@ export class CreateMenuItemDto {
   availableDays?: number[];
 
   @ApiProperty({
-    example: 'Entrées chaudes',
-    description: 'Nom de la sous-catégorie',
+    example: 'uuid-v4-sub-category-id',
+    description: 'ID de la sous-catégorie parente',
     required: false,
   })
-  @IsString()
+  @IsUUID()
   @IsOptional()
-  subcategoryName?: string;
+  subCategoryId?: string;
 
   @ApiProperty({
     example: 'uuid-v4-category-id',

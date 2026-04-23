@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import {
   BarChart3,
@@ -10,49 +10,63 @@ import {
   Euro,
   Percent,
 } from 'lucide-react';
+import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 type OrderStatus = 'COMPLETED' | 'CANCELLED' | 'PREPARING' | 'PENDING' | 'READY';
-type Category = 'Burgers' | 'Pizzas' | 'Salades' | 'Boissons' | 'Desserts';
-type Channel = 'SUR_PLACE' | 'A_EMPORTER' | 'LIVRAISON';
-
-type MockOrder = {
-  id: string;
-  date: string;
-  amount: number;
-  status: OrderStatus;
-  category: Category;
-  table: string;
-  customerType: 'NEW' | 'RETURNING';
-  channel: Channel;
-  itemName: string;
-  cancellationReason?: 'Client annule' | 'Rupture stock' | 'Delai long';
-};
-
-const mockOrders: MockOrder[] = [
-  { id: '1', date: '2026-04-13T10:10:00', amount: 28, status: 'COMPLETED', category: 'Burgers', table: 'T-01', customerType: 'NEW', channel: 'SUR_PLACE', itemName: 'Burger Signature' },
-  { id: '2', date: '2026-04-13T10:45:00', amount: 17, status: 'COMPLETED', category: 'Desserts', table: 'T-03', customerType: 'RETURNING', channel: 'SUR_PLACE', itemName: 'Tiramisu Maison' },
-  { id: '3', date: '2026-04-13T11:20:00', amount: 42, status: 'PREPARING', category: 'Pizzas', table: 'T-06', customerType: 'RETURNING', channel: 'A_EMPORTER', itemName: 'Pizza Truffe' },
-  { id: '4', date: '2026-04-13T11:50:00', amount: 12, status: 'CANCELLED', category: 'Boissons', table: 'T-02', customerType: 'NEW', channel: 'SUR_PLACE', itemName: 'Jus Detox', cancellationReason: 'Client annule' },
-  { id: '5', date: '2026-04-13T12:15:00', amount: 35, status: 'COMPLETED', category: 'Burgers', table: 'T-08', customerType: 'RETURNING', channel: 'SUR_PLACE', itemName: 'Double Cheese' },
-  { id: '6', date: '2026-04-13T12:45:00', amount: 23, status: 'READY', category: 'Salades', table: 'T-04', customerType: 'NEW', channel: 'LIVRAISON', itemName: 'Salade Cesar' },
-  { id: '7', date: '2026-04-13T13:05:00', amount: 58, status: 'COMPLETED', category: 'Pizzas', table: 'T-09', customerType: 'RETURNING', channel: 'SUR_PLACE', itemName: 'Pizza Truffe' },
-  { id: '8', date: '2026-04-13T13:25:00', amount: 19, status: 'PENDING', category: 'Desserts', table: 'T-10', customerType: 'NEW', channel: 'A_EMPORTER', itemName: 'Fondant Choco' },
-  { id: '9', date: '2026-04-12T20:15:00', amount: 31, status: 'COMPLETED', category: 'Burgers', table: 'T-05', customerType: 'RETURNING', channel: 'SUR_PLACE', itemName: 'Burger Signature' },
-  { id: '10', date: '2026-04-12T21:05:00', amount: 15, status: 'CANCELLED', category: 'Salades', table: 'T-11', customerType: 'NEW', channel: 'LIVRAISON', itemName: 'Salade Cesar', cancellationReason: 'Rupture stock' },
-  { id: '11', date: '2026-04-11T19:30:00', amount: 49, status: 'COMPLETED', category: 'Pizzas', table: 'T-07', customerType: 'RETURNING', channel: 'SUR_PLACE', itemName: 'Pizza Truffe' },
-  { id: '12', date: '2026-04-10T18:10:00', amount: 22, status: 'COMPLETED', category: 'Boissons', table: 'T-12', customerType: 'NEW', channel: 'A_EMPORTER', itemName: 'Mocktail Passion' },
-];
-
 type Period = 'TODAY' | 'LAST_7' | 'LAST_30' | 'CUSTOM';
 
+type AnalyticsData = {
+  period: {
+    start: string;
+    end: string;
+  };
+  kpis: {
+    revenue: { value: number; trend: number };
+    orders: { value: number; trend: number };
+    avgTicket: { value: number; trend: number };
+    uniqueClients: { value: number; trend: number };
+  };
+  topItems: Array<{ name: string; orders: number; revenue: number }>;
+  statusSplit: Record<OrderStatus, number>;
+  hourlyData: Array<{ hour: string; orders: number; amount: number }>;
+  categoryPerformance: Array<{ category: string; orders: number; revenue: number; margin: number }>;
+  tablePerformance: Array<{ table: string; orders: number; revenue: number; rotation: number }>;
+  cancellations: {
+    total: number;
+    rate: number;
+    byReason: Record<string, number>;
+  };
+  forecast: {
+    endDayProjection: number;
+    endWeekProjection: number;
+  };
+  cohorts: {
+    newCount: number;
+    returningCount: number;
+  };
+  totalOrders: number;
+};
+
 const Analytics: React.FC = () => {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  
   const [period, setPeriod] = useState<Period>('LAST_7');
-  const [customStart, setCustomStart] = useState('2026-04-10');
-  const [customEnd, setCustomEnd] = useState('2026-04-13');
+  const [customStart, setCustomStart] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 7);
+    return date.toISOString().split('T')[0];
+  });
+  const [customEnd, setCustomEnd] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
   const [statusFilter, setStatusFilter] = useState<'ALL' | OrderStatus>('ALL');
-  const [categoryFilter, setCategoryFilter] = useState<'ALL' | Category>('ALL');
-  const [channelFilter, setChannelFilter] = useState<'ALL' | Channel>('ALL');
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+  const [channelFilter, setChannelFilter] = useState<string>('ALL');
+  
   const [widgets, setWidgets] = useState({
     statusSplit: true,
     hourlyHeatmap: true,
@@ -63,159 +77,67 @@ const Analytics: React.FC = () => {
     cohorts: true,
   });
 
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 550);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const getRange = (p: Period) => {
-    const end = new Date('2026-04-13T23:59:59');
-    if (p === 'TODAY') return { start: new Date('2026-04-13T00:00:00'), end };
-    if (p === 'LAST_7') return { start: new Date('2026-04-07T00:00:00'), end };
-    if (p === 'LAST_30') return { start: new Date('2026-03-15T00:00:00'), end };
-    return {
-      start: new Date(`${customStart}T00:00:00`),
-      end: new Date(`${customEnd}T23:59:59`),
-    };
+  const loadAnalytics = async () => {
+    if (!user?.restaurant?.id) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const params: any = {
+        period,
+      };
+      
+      if (period === 'CUSTOM') {
+        params.startDate = customStart;
+        params.endDate = customEnd;
+      }
+      
+      if (statusFilter !== 'ALL') {
+        params.status = statusFilter;
+      }
+      
+      if (categoryFilter !== 'ALL') {
+        params.category = categoryFilter;
+      }
+      
+      if (channelFilter !== 'ALL') {
+        params.channel = channelFilter;
+      }
+      
+      const response = await api.get<AnalyticsData>(`/analytics/${user.restaurant.id}`, { params });
+      setData(response.data);
+    } catch (err: any) {
+      console.error('Erreur chargement analytics:', err);
+      setError(err.response?.data?.message || 'Impossible de charger les analytics');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const filteredOrders = useMemo(() => {
-    const range = getRange(period);
-    return mockOrders.filter((o) => {
-      const date = new Date(o.date);
-      const inRange = date >= range.start && date <= range.end;
-      const statusOk = statusFilter === 'ALL' || o.status === statusFilter;
-      const categoryOk = categoryFilter === 'ALL' || o.category === categoryFilter;
-      const channelOk = channelFilter === 'ALL' || o.channel === channelFilter;
-      return inRange && statusOk && categoryOk && channelOk;
-    });
-  }, [period, customStart, customEnd, statusFilter, categoryFilter, channelFilter]);
-
-  const previousOrders = useMemo(() => {
-    const range = getRange(period);
-    const duration = range.end.getTime() - range.start.getTime();
-    const prevEnd = new Date(range.start.getTime() - 1);
-    const prevStart = new Date(prevEnd.getTime() - duration);
-    return mockOrders.filter((o) => {
-      const date = new Date(o.date);
-      return date >= prevStart && date <= prevEnd;
-    });
-  }, [period, customStart, customEnd]);
-
-  const kpis = useMemo(() => {
-    const currentRevenue = filteredOrders.reduce((s, o) => s + o.amount, 0);
-    const currentOrders = filteredOrders.length;
-    const currentAvg = currentOrders ? currentRevenue / currentOrders : 0;
-    const currentClients = new Set(filteredOrders.map((o) => `${o.customerType}-${o.id.slice(0, 2)}`)).size;
-
-    const prevRevenue = previousOrders.reduce((s, o) => s + o.amount, 0);
-    const prevOrders = previousOrders.length;
-    const prevAvg = prevOrders ? prevRevenue / prevOrders : 0;
-    const prevClients = new Set(previousOrders.map((o) => `${o.customerType}-${o.id.slice(0, 2)}`)).size;
-
-    const trend = (cur: number, prev: number) =>
-      prev <= 0 ? 100 : ((cur - prev) / prev) * 100;
-
-    return {
-      revenue: { value: currentRevenue, trend: trend(currentRevenue, prevRevenue) },
-      orders: { value: currentOrders, trend: trend(currentOrders, prevOrders) },
-      avgTicket: { value: currentAvg, trend: trend(currentAvg, prevAvg) },
-      uniqueClients: { value: currentClients, trend: trend(currentClients, prevClients) },
-    };
-  }, [filteredOrders, previousOrders]);
-
-  const topItems = useMemo(() => {
-    const map = new Map<string, { orders: number; revenue: number }>();
-    filteredOrders.forEach((o) => {
-      const prev = map.get(o.itemName) || { orders: 0, revenue: 0 };
-      map.set(o.itemName, { orders: prev.orders + 1, revenue: prev.revenue + o.amount });
-    });
-    return Array.from(map.entries())
-      .map(([name, stats]) => ({ name, ...stats }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
-  }, [filteredOrders]);
-
-  const statusSplit = useMemo(() => {
-    const base: Record<OrderStatus, number> = {
-      COMPLETED: 0,
-      CANCELLED: 0,
-      PREPARING: 0,
-      PENDING: 0,
-      READY: 0,
-    };
-    filteredOrders.forEach((o) => {
-      base[o.status] += 1;
-    });
-    return base;
-  }, [filteredOrders]);
-
-  const hourly = useMemo(() => {
-    const hours = ['10h', '11h', '12h', '13h', '14h', '15h', '16h', '17h', '18h', '19h', '20h', '21h'];
-    return hours.map((h) => {
-      const hourNum = Number(h.replace('h', ''));
-      const items = filteredOrders.filter((o) => new Date(o.date).getHours() === hourNum);
-      return { hour: h, orders: items.length, amount: items.reduce((s, o) => s + o.amount, 0) };
-    });
-  }, [filteredOrders]);
-
-  const categoryPerf = useMemo(() => {
-    const categories: Category[] = ['Burgers', 'Pizzas', 'Salades', 'Boissons', 'Desserts'];
-    return categories.map((c) => {
-      const items = filteredOrders.filter((o) => o.category === c);
-      return { category: c, orders: items.length, revenue: items.reduce((s, o) => s + o.amount, 0), margin: 62 };
-    });
-  }, [filteredOrders]);
-
-  const tablePerf = useMemo(() => {
-    const map = new Map<string, { orders: number; revenue: number }>();
-    filteredOrders.forEach((o) => {
-      const prev = map.get(o.table) || { orders: 0, revenue: 0 };
-      map.set(o.table, { orders: prev.orders + 1, revenue: prev.revenue + o.amount });
-    });
-    return Array.from(map.entries())
-      .map(([table, stats]) => ({ table, ...stats, rotation: Math.max(1, Math.round(stats.orders / 2)) }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
-  }, [filteredOrders]);
-
-  const cancellations = useMemo(() => {
-    const items = filteredOrders.filter((o) => o.status === 'CANCELLED');
-    const byReason = {
-      'Client annule': items.filter((o) => o.cancellationReason === 'Client annule').length,
-      'Rupture stock': items.filter((o) => o.cancellationReason === 'Rupture stock').length,
-      'Delai long': items.filter((o) => o.cancellationReason === 'Delai long').length,
-    };
-    return { total: items.length, rate: filteredOrders.length ? (items.length / filteredOrders.length) * 100 : 0, byReason };
-  }, [filteredOrders]);
-
-  const forecast = useMemo(() => {
-    const currentRevenue = filteredOrders.reduce((s, o) => s + o.amount, 0);
-    const progress = 0.68;
-    const endDayProjection = progress ? currentRevenue / progress : currentRevenue;
-    return {
-      endDayProjection,
-      endWeekProjection: endDayProjection * 7,
-    };
-  }, [filteredOrders]);
-
-  const cohorts = useMemo(() => {
-    const newCount = filteredOrders.filter((o) => o.customerType === 'NEW').length;
-    const returningCount = filteredOrders.filter((o) => o.customerType === 'RETURNING').length;
-    return { newCount, returningCount };
-  }, [filteredOrders]);
+  useEffect(() => {
+    void loadAnalytics();
+  }, [period, customStart, customEnd, statusFilter, categoryFilter, channelFilter, user?.restaurant?.id]);
 
   const toggleWidget = (key: keyof typeof widgets) => {
     setWidgets((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const exportCsv = () => {
-    if (!filteredOrders.length) return;
-    const headers = ['ID', 'Date', 'Montant', 'Statut', 'Categorie', 'Table', 'Canal', 'Article'];
-    const rows = filteredOrders.map((o) => [o.id, o.date, o.amount.toFixed(2), o.status, o.category, o.table, o.channel, o.itemName]);
+    if (!data) return;
+    
+    const headers = ['Métrique', 'Valeur'];
+    const rows = [
+      ['CA total', data.kpis.revenue.value.toFixed(2)],
+      ['Commandes', data.kpis.orders.value.toString()],
+      ['Panier moyen', data.kpis.avgTicket.value.toFixed(2)],
+      ['Clients uniques', data.kpis.uniqueClients.value.toString()],
+    ];
+    
     const csv = [headers, ...rows]
       .map((row) => row.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(','))
       .join('\n');
+    
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -247,7 +169,21 @@ const Analytics: React.FC = () => {
     );
   }
 
-  if (!filteredOrders.length) {
+  if (error) {
+    return (
+      <Layout title="Analytiques" subtitle="Erreur de chargement">
+        <div className="empty-state">
+          <BarChart3 size={28} />
+          <p>{error}</p>
+          <button className="btn btn-primary" onClick={() => void loadAnalytics()}>
+            Réessayer
+          </button>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!data || data.totalOrders === 0) {
     return (
       <Layout title="Analytiques" subtitle="Aucune donnée pour les filtres sélectionnés.">
         <div className="empty-state">
@@ -258,19 +194,19 @@ const Analytics: React.FC = () => {
     );
   }
 
-  const maxHourlyAmount = Math.max(...hourly.map((h) => h.amount), 1);
-  const maxCategoryRevenue = Math.max(...categoryPerf.map((c) => c.revenue), 1);
-  const totalStatus = Math.max(filteredOrders.length, 1);
+  const maxHourlyAmount = Math.max(...data.hourlyData.map((h) => h.amount), 1);
+  const maxCategoryRevenue = Math.max(...data.categoryPerformance.map((c) => c.revenue), 1);
+  const totalStatus = Math.max(data.totalOrders, 1);
   const statusPct = {
-    COMPLETED: (statusSplit.COMPLETED / totalStatus) * 100,
-    CANCELLED: (statusSplit.CANCELLED / totalStatus) * 100,
-    PREPARING: (statusSplit.PREPARING / totalStatus) * 100,
-    PENDING: (statusSplit.PENDING / totalStatus) * 100,
-    READY: (statusSplit.READY / totalStatus) * 100,
+    COMPLETED: (data.statusSplit.COMPLETED / totalStatus) * 100,
+    CANCELLED: (data.statusSplit.CANCELLED / totalStatus) * 100,
+    PREPARING: (data.statusSplit.PREPARING / totalStatus) * 100,
+    PENDING: (data.statusSplit.PENDING / totalStatus) * 100,
+    READY: (data.statusSplit.READY / totalStatus) * 100,
   };
 
   return (
-    <Layout title="Analytiques" subtitle="Pilotage avancé des performances restaurant (mock).">
+    <Layout title="Analytiques" subtitle="Pilotage avancé des performances restaurant.">
       <div className="card" style={{ padding: 14, marginBottom: 14 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -303,15 +239,15 @@ const Analytics: React.FC = () => {
               <option value="PENDING">En attente</option>
               <option value="READY">Prêtes</option>
             </select>
-            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value as 'ALL' | Category)} className="form-input" style={{ height: 32, width: 150 }}>
-              <option value="ALL">Toutes catégories</option>
-              <option value="Burgers">Burgers</option>
-              <option value="Pizzas">Pizzas</option>
-              <option value="Salades">Salades</option>
-              <option value="Boissons">Boissons</option>
-              <option value="Desserts">Desserts</option>
-            </select>
-            <select value={channelFilter} onChange={(e) => setChannelFilter(e.target.value as 'ALL' | Channel)} className="form-input" style={{ height: 32, width: 150 }}>
+            <input
+              type="text"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              placeholder="Catégorie..."
+              className="form-input"
+              style={{ height: 32, width: 150 }}
+            />
+            <select value={channelFilter} onChange={(e) => setChannelFilter(e.target.value)} className="form-input" style={{ height: 32, width: 150 }}>
               <option value="ALL">Tous canaux</option>
               <option value="SUR_PLACE">Sur place</option>
               <option value="A_EMPORTER">A emporter</option>
@@ -327,20 +263,20 @@ const Analytics: React.FC = () => {
 
       <div className="stats-grid" style={{ marginBottom: 16 }}>
         <div className="stat-card">
-          <div className="stat-card-header"><span className="stat-label">CA total</span>{trendBadge(kpis.revenue.trend)}</div>
-          <div className="stat-value"><Euro size={18} style={{ marginRight: 4 }} />{kpis.revenue.value.toFixed(2)}</div>
+          <div className="stat-card-header"><span className="stat-label">CA total</span>{trendBadge(data.kpis.revenue.trend)}</div>
+          <div className="stat-value"><Euro size={18} style={{ marginRight: 4 }} />{data.kpis.revenue.value.toFixed(2)}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-header"><span className="stat-label">Commandes</span>{trendBadge(kpis.orders.trend)}</div>
-          <div className="stat-value">{kpis.orders.value}</div>
+          <div className="stat-card-header"><span className="stat-label">Commandes</span>{trendBadge(data.kpis.orders.trend)}</div>
+          <div className="stat-value">{data.kpis.orders.value}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-header"><span className="stat-label">Panier moyen</span>{trendBadge(kpis.avgTicket.trend)}</div>
-          <div className="stat-value">{kpis.avgTicket.value.toFixed(2)} EUR</div>
+          <div className="stat-card-header"><span className="stat-label">Panier moyen</span>{trendBadge(data.kpis.avgTicket.trend)}</div>
+          <div className="stat-value">{data.kpis.avgTicket.value.toFixed(2)} EUR</div>
         </div>
         <div className="stat-card">
-          <div className="stat-card-header"><span className="stat-label">Clients uniques</span>{trendBadge(kpis.uniqueClients.trend)}</div>
-          <div className="stat-value"><Users size={18} style={{ marginRight: 4 }} />{kpis.uniqueClients.value}</div>
+          <div className="stat-card-header"><span className="stat-label">Clients uniques</span>{trendBadge(data.kpis.uniqueClients.trend)}</div>
+          <div className="stat-value"><Users size={18} style={{ marginRight: 4 }} />{data.kpis.uniqueClients.value}</div>
         </div>
       </div>
 
@@ -360,7 +296,7 @@ const Analytics: React.FC = () => {
               Diagramme en barres (CA par catégorie)
             </p>
             <div style={{ display: 'grid', gap: 8 }}>
-              {categoryPerf.map((row) => (
+              {data.categoryPerformance.map((row) => (
                 <div key={row.category}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 3 }}>
                     <span>{row.category}</span>
@@ -414,11 +350,11 @@ const Analytics: React.FC = () => {
                     color: '#334155',
                   }}
                 >
-                  {filteredOrders.length}
+                  {data.totalOrders}
                 </div>
               </div>
               <div style={{ display: 'grid', gap: 5 }}>
-                {(Object.keys(statusSplit) as OrderStatus[]).map((status) => (
+                {(Object.keys(data.statusSplit) as OrderStatus[]).map((status) => (
                   <div key={status} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
                     <span
                       style={{
@@ -438,7 +374,7 @@ const Analytics: React.FC = () => {
                       }}
                     />
                     <span>{status}</span>
-                    <strong>{statusSplit[status]}</strong>
+                    <strong>{data.statusSplit[status]}</strong>
                   </div>
                 ))}
               </div>
@@ -450,7 +386,7 @@ const Analytics: React.FC = () => {
               Courbe (évolution du CA horaire)
             </p>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 140, padding: '6px 0' }}>
-              {hourly.map((point) => (
+              {data.hourlyData.map((point) => (
                 <div key={point.hour} style={{ flex: 1, minWidth: 0 }}>
                   <div
                     style={{
@@ -463,7 +399,7 @@ const Analytics: React.FC = () => {
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-400)' }}>
-              {hourly.map((h, i) => (
+              {data.hourlyData.map((h, i) => (
                 <span key={h.hour} style={{ opacity: i % 2 === 0 ? 1 : 0.4 }}>{h.hour}</span>
               ))}
             </div>
@@ -496,13 +432,21 @@ const Analytics: React.FC = () => {
           <table className="data-table">
             <thead><tr><th>Article</th><th>Commandes</th><th>CA</th></tr></thead>
             <tbody>
-              {topItems.map((item) => (
-                <tr key={item.name}>
-                  <td style={{ fontWeight: 600 }}>{item.name}</td>
-                  <td>{item.orders}</td>
-                  <td>{item.revenue.toFixed(2)} EUR</td>
+              {data.topItems.length > 0 ? (
+                data.topItems.map((item) => (
+                  <tr key={item.name}>
+                    <td style={{ fontWeight: 600 }}>{item.name}</td>
+                    <td>{item.orders}</td>
+                    <td>{item.revenue.toFixed(2)} EUR</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-500)' }}>
+                    Aucun article
+                  </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -511,16 +455,16 @@ const Analytics: React.FC = () => {
           <div className="card" style={{ padding: 20 }}>
             <div className="card-header"><span className="card-title">Répartition statuts</span></div>
             <div style={{ display: 'grid', gap: 10 }}>
-              {(Object.keys(statusSplit) as OrderStatus[]).map((status) => (
+              {(Object.keys(data.statusSplit) as OrderStatus[]).map((status) => (
                 <div key={status}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
                     <span>{status}</span>
-                    <strong>{statusSplit[status]}</strong>
+                    <strong>{data.statusSplit[status]}</strong>
                   </div>
                   <div style={{ width: '100%', height: 8, background: '#e2e8f0', borderRadius: 999 }}>
                     <div
                       style={{
-                        width: `${(statusSplit[status] / Math.max(filteredOrders.length, 1)) * 100}%`,
+                        width: `${(data.statusSplit[status] / Math.max(data.totalOrders, 1)) * 100}%`,
                         height: '100%',
                         borderRadius: 999,
                         background: 'linear-gradient(90deg, #e87996, var(--primary))',
@@ -538,7 +482,7 @@ const Analytics: React.FC = () => {
         <div className="card" style={{ padding: 20, marginTop: 14 }}>
           <div className="card-header"><span className="card-title">Heatmap horaire (commandes / CA)</span></div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0,1fr))', gap: 8 }}>
-            {hourly.map((point) => (
+            {data.hourlyData.map((point) => (
               <div key={point.hour} style={{ textAlign: 'center' }}>
                 <div
                   style={{
@@ -569,14 +513,22 @@ const Analytics: React.FC = () => {
             <table className="data-table">
               <thead><tr><th>Catégorie</th><th>Commandes</th><th>CA</th><th>Marge estimée</th></tr></thead>
               <tbody>
-                {categoryPerf.map((row) => (
-                  <tr key={row.category}>
-                    <td style={{ fontWeight: 600 }}>{row.category}</td>
-                    <td>{row.orders}</td>
-                    <td>{row.revenue.toFixed(2)} EUR</td>
-                    <td>{row.margin}%</td>
+                {data.categoryPerformance.length > 0 ? (
+                  data.categoryPerformance.map((row) => (
+                    <tr key={row.category}>
+                      <td style={{ fontWeight: 600 }}>{row.category}</td>
+                      <td>{row.orders}</td>
+                      <td>{row.revenue.toFixed(2)} EUR</td>
+                      <td>{row.margin}%</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-500)' }}>
+                      Aucune catégorie
+                    </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -588,14 +540,22 @@ const Analytics: React.FC = () => {
             <table className="data-table">
               <thead><tr><th>Table</th><th>Commandes</th><th>CA</th><th>Rotation</th></tr></thead>
               <tbody>
-                {tablePerf.map((row) => (
-                  <tr key={row.table}>
-                    <td style={{ fontWeight: 600 }}>{row.table}</td>
-                    <td>{row.orders}</td>
-                    <td>{row.revenue.toFixed(2)} EUR</td>
-                    <td>{row.rotation}x</td>
+                {data.tablePerformance.length > 0 ? (
+                  data.tablePerformance.map((row) => (
+                    <tr key={row.table}>
+                      <td style={{ fontWeight: 600 }}>{row.table}</td>
+                      <td>{row.orders}</td>
+                      <td>{row.revenue.toFixed(2)} EUR</td>
+                      <td>{row.rotation}x</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-500)' }}>
+                      Aucune table
+                    </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -607,11 +567,11 @@ const Analytics: React.FC = () => {
           <div className="card" style={{ padding: 20 }}>
             <div className="card-header"><span className="card-title">Annulations</span></div>
             <p style={{ marginBottom: 10, color: 'var(--text-600)' }}>
-              Taux annulation: <strong>{cancellations.rate.toFixed(1)}%</strong> ({cancellations.total})
+              Taux annulation: <strong>{data.cancellations.rate.toFixed(1)}%</strong> ({data.cancellations.total})
             </p>
             <table className="data-table">
               <tbody>
-                {Object.entries(cancellations.byReason).map(([reason, count]) => (
+                {Object.entries(data.cancellations.byReason).map(([reason, count]) => (
                   <tr key={reason}>
                     <td>{reason}</td>
                     <td style={{ fontWeight: 700 }}>{count}</td>
@@ -626,10 +586,10 @@ const Analytics: React.FC = () => {
           <div className="card" style={{ padding: 20 }}>
             <div className="card-header"><span className="card-title">Prévisions</span></div>
             <p style={{ marginBottom: 8 }}>
-              Fin de journée estimée: <strong>{forecast.endDayProjection.toFixed(2)} EUR</strong>
+              Fin de journée estimée: <strong>{data.forecast.endDayProjection.toFixed(2)} EUR</strong>
             </p>
             <p>
-              Semaine estimée: <strong>{forecast.endWeekProjection.toFixed(2)} EUR</strong>
+              Semaine estimée: <strong>{data.forecast.endWeekProjection.toFixed(2)} EUR</strong>
             </p>
           </div>
         )}
@@ -641,19 +601,19 @@ const Analytics: React.FC = () => {
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <div className="stat-card" style={{ flex: 1 }}>
               <div className="stat-label">Nouveaux</div>
-              <div className="stat-value">{cohorts.newCount}</div>
+              <div className="stat-value">{data.cohorts.newCount}</div>
             </div>
             <div className="stat-card" style={{ flex: 1 }}>
               <div className="stat-label">Récurrents</div>
-              <div className="stat-value">{cohorts.returningCount}</div>
+              <div className="stat-value">{data.cohorts.returningCount}</div>
             </div>
             <div className="stat-card" style={{ flex: 1 }}>
               <div className="stat-label">Part récurrents</div>
               <div className="stat-value">
                 <Percent size={18} style={{ marginRight: 4 }} />
                 {(
-                  cohorts.returningCount /
-                  Math.max(cohorts.newCount + cohorts.returningCount, 1) *
+                  data.cohorts.returningCount /
+                  Math.max(data.cohorts.newCount + data.cohorts.returningCount, 1) *
                   100
                 ).toFixed(1)}
               </div>

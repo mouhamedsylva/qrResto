@@ -79,7 +79,7 @@ const Register: React.FC = () => {
               </div>
             </div>
             <h2 className="auth-title">Créer un compte</h2>
-            <p className="auth-subtitle">Devenez propriétaire et digitalisez votre carte</p>
+            <p className="auth-subtitle">Devenez propriétaire et digitalisez votre restaurant</p>
           </div>
 
           {error && (

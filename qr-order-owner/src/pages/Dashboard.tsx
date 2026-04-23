@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 type DashboardResponse = {
   stats: {
@@ -87,45 +89,47 @@ const mockRecentOrders: DashboardResponse['recentOrders'] = [
   },
 ];
 
-const statusMeta: Record<
-  string,
-  { label: string; color: string; bg: string }
-> = {
-  PENDING: {
-    label: 'En attente',
-    color: '#f59e0b',
-    bg: 'rgba(245,158,11,0.08)',
-  },
-  PREPARING: {
-    label: 'En preparation',
-    color: '#6366f1',
-    bg: 'rgba(99,102,241,0.08)',
-  },
-  READY: {
-    label: 'Prete',
-    color: '#0ea5e9',
-    bg: 'rgba(14,165,233,0.08)',
-  },
-  COMPLETED: {
-    label: 'Servie',
-    color: '#10b981',
-    bg: 'rgba(16,185,129,0.08)',
-  },
-  CANCELLED: {
-    label: 'Annulee',
-    color: '#ef4444',
-    bg: 'rgba(239,68,68,0.08)',
-  },
-};
-
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [tables, setTables] = useState<TableRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const dashboardTablesRestaurantId =
     'e4ae2462-dbd2-4747-b89b-5304b6b14d8c';
+
+  const statusMeta: Record<
+    string,
+    { label: string; color: string; bg: string }
+  > = {
+    PENDING: {
+      label: t('orders.status.pending'),
+      color: '#f59e0b',
+      bg: 'rgba(245,158,11,0.08)',
+    },
+    PREPARING: {
+      label: t('orders.status.preparing'),
+      color: '#6366f1',
+      bg: 'rgba(99,102,241,0.08)',
+    },
+    READY: {
+      label: t('orders.status.ready'),
+      color: '#0ea5e9',
+      bg: 'rgba(14,165,233,0.08)',
+    },
+    COMPLETED: {
+      label: t('orders.status.completed'),
+      color: '#10b981',
+      bg: 'rgba(16,185,129,0.08)',
+    },
+    CANCELLED: {
+      label: t('orders.status.cancelled'),
+      color: '#ef4444',
+      bg: 'rgba(239,68,68,0.08)',
+    },
+  };
 
   useEffect(() => {
     const restaurantId = user?.restaurant?.id;
@@ -152,27 +156,6 @@ const Dashboard: React.FC = () => {
     void loadDashboard();
   }, [user?.restaurant?.id]);
 
-  const currency = useMemo(
-    () =>
-      new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'EUR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      }),
-    [],
-  );
-
-  const money2 = useMemo(
-    () =>
-      new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'EUR',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }),
-    [],
-  );
 
   const formatTrend = (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(1)} %`;
   const restaurantName = user?.restaurant?.name ?? 'votre restaurant';
@@ -209,13 +192,13 @@ const Dashboard: React.FC = () => {
   }, [tables, data?.floorPlan]);
 
   return (
-    <Layout title="Tableau de bord" subtitle={`Performance en temps reel - ${restaurantName}`}>
+    <Layout title={t('dashboard.title')} subtitle={`${t('dashboard.subtitle')} - ${restaurantName}`}>
 
     {/* ── KPI Row ── */}
     <div className="stats-grid">
       <StatsCard
-        label="Chiffre d'affaires"
-        value={currency.format(data?.stats.revenue.value ?? 0)}
+        label={t('dashboard.revenue')}
+        value={formatPrice(data?.stats.revenue.value ?? 0)}
         change={formatTrend(data?.stats.revenue.trendPercent ?? 0)}
         trend={(data?.stats.revenue.trendPercent ?? 0) >= 0 ? 'up' : 'down'}
         icon={<DollarSign size={20} />}
@@ -224,7 +207,7 @@ const Dashboard: React.FC = () => {
         animClass="anim-in-1"
       />
       <StatsCard
-        label="Commandes totales"
+        label={t('dashboard.orders')}
         value={String(data?.stats.orders.value ?? 0)}
         change={formatTrend(data?.stats.orders.trendPercent ?? 0)}
         trend={(data?.stats.orders.trendPercent ?? 0) >= 0 ? 'up' : 'down'}
@@ -234,7 +217,7 @@ const Dashboard: React.FC = () => {
         animClass="anim-in-2"
       />
       <StatsCard
-        label="Clients du jour"
+        label={t('dashboard.customers')}
         value={String(data?.stats.customers.value ?? 0)}
         change={formatTrend(data?.stats.customers.trendPercent ?? 0)}
         trend={(data?.stats.customers.trendPercent ?? 0) >= 0 ? 'up' : 'down'}
@@ -244,7 +227,7 @@ const Dashboard: React.FC = () => {
         animClass="anim-in-3"
       />
       <StatsCard
-        label="Temps de prépa moyen"
+        label={t('dashboard.avgPrepTime')}
         value={`${Math.round(data?.stats.prepTime.valueMinutes ?? 0)} min`}
         change={`${(data?.stats.prepTime.trendMinutes ?? 0) > 0 ? '+' : ''}${Math.round(
           data?.stats.prepTime.trendMinutes ?? 0,
@@ -264,17 +247,17 @@ const Dashboard: React.FC = () => {
       <div className="card anim-in anim-in-5">
         <div className="card-header">
           <span className="card-title">
-            Commandes récentes
+            {t('dashboard.recentOrders')}
             <span className="status-badge" style={{ background: 'var(--primary-faint)', color: 'var(--primary)', fontSize: 11 }}>
-              Live
+              {t('dashboard.live')}
             </span>
           </span>
           <div className="card-actions">
             <button className="btn btn-ghost btn-sm">
-              <Filter size={14} /> Filtrer
+              <Filter size={14} /> {t('common.filter')}
             </button>
             <button className="btn btn-ghost btn-sm">
-              <Download size={14} /> Exporter
+              <Download size={14} /> {t('common.export')}
             </button>
           </div>
         </div>
@@ -283,10 +266,10 @@ const Dashboard: React.FC = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Client</th>
-                <th>Table</th>
-                <th>Statut</th>
-                <th>Montant</th>
+                <th>{t('dashboard.customer')}</th>
+                <th>{t('dashboard.table')}</th>
+                <th>{t('dashboard.status')}</th>
+                <th>{t('dashboard.amount')}</th>
                 <th style={{ width: 40 }} />
               </tr>
             </thead>
@@ -324,7 +307,7 @@ const Dashboard: React.FC = () => {
                     </span>
                   </td>
                   <td>
-                    <span style={{ fontWeight: 700, fontSize: 13.5 }}>{money2.format(o.amount)}</span>
+                    <span style={{ fontWeight: 700, fontSize: 13.5 }}>{formatPrice(o.amount)}</span>
                   </td>
                   <td>
                     <button className="icon-btn" style={{ width: 30, height: 30, borderRadius: 8 }}>
@@ -337,7 +320,7 @@ const Dashboard: React.FC = () => {
               {!isLoading && recentOrders.length === 0 && (
                 <tr>
                   <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-500)' }}>
-                    Aucune commande recente aujourd'hui.
+                    {t('dashboard.noRecentOrders')}
                   </td>
                 </tr>
               )}
@@ -347,7 +330,7 @@ const Dashboard: React.FC = () => {
 
         <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'center' }}>
           <button className="btn btn-ghost btn-sm" onClick={() => navigate('/orders')}>
-            Voir Liste Commandes <ArrowRight size={14} />
+            {t('dashboard.viewAllOrders')} <ArrowRight size={14} />
           </button>
         </div>
       </div>
@@ -355,19 +338,19 @@ const Dashboard: React.FC = () => {
       {/* ── Table Occupancy ── */}
       <div className="card anim-in anim-in-6" style={{ display: 'flex', flexDirection: 'column' }}>
         <div className="card-header">
-          <span className="card-title">Plan de salle</span>
+          <span className="card-title">{t('dashboard.floorPlan')}</span>
           <div className="legend">
             <span className="legend-item">
               <span className="legend-dot" style={{ background: 'var(--border)' }} />
-              Libre
+              {t('dashboard.free')}
             </span>
             <span className="legend-item">
               <span className="legend-dot" style={{ background: 'var(--primary)' }} />
-              Occupée
+              {t('dashboard.occupied')}
             </span>
             <span className="legend-item">
               <span className="legend-dot" style={{ background: 'var(--warning)' }} />
-              &gt;45 min
+              {t('dashboard.longOccupied')}
             </span>
           </div>
         </div>
@@ -393,7 +376,7 @@ const Dashboard: React.FC = () => {
           ))}
           {!isLoading && floorTiles.length === 0 && (
             <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-500)' }}>
-              Aucune table configuree.
+              {t('dashboard.noTables')}
             </div>
           )}
         </div>
@@ -404,7 +387,7 @@ const Dashboard: React.FC = () => {
             style={{ width: '100%', justifyContent: 'center' }}
             onClick={() => navigate('/tables')}
           >
-            Gérer le plan de salle <ArrowRight size={15} />
+            {t('dashboard.manageFloorPlan')} <ArrowRight size={15} />
           </button>
         </div>
       </div>

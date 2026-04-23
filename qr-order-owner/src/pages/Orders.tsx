@@ -8,6 +8,8 @@ import {
   XCircle,
   Download,
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 type OrderStatus = 'PENDING' | 'PREPARING' | 'READY' | 'COMPLETED' | 'CANCELLED';
 
@@ -75,22 +77,24 @@ const mockOrders: Order[] = [
   },
 ];
 
-const statusConfig: Record<
-  OrderStatus,
-  { label: string; color: string; bg: string }
-> = {
-  PENDING: { label: 'En attente', color: '#b45309', bg: 'rgba(245, 158, 11, 0.14)' },
-  PREPARING: { label: 'En cours', color: '#6d28d9', bg: 'rgba(109, 40, 217, 0.14)' },
-  READY: { label: 'Prête', color: '#0369a1', bg: 'rgba(3, 105, 161, 0.14)' },
-  COMPLETED: { label: 'Terminée', color: '#047857', bg: 'rgba(4, 120, 87, 0.14)' },
-  CANCELLED: { label: 'Annulée', color: '#b91c1c', bg: 'rgba(185, 28, 28, 0.14)' },
-};
-
 const Orders: React.FC = () => {
+  const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [statusFilter, setStatusFilter] = useState<'ALL' | OrderStatus>('ALL');
   const [isEditing, setIsEditing] = useState(false);
   const [draggedOrderId, setDraggedOrderId] = useState<string | null>(null);
+
+  const statusConfig: Record<
+    OrderStatus,
+    { label: string; color: string; bg: string }
+  > = {
+    PENDING: { label: t('orders.status.pending'), color: '#b45309', bg: 'rgba(245, 158, 11, 0.14)' },
+    PREPARING: { label: t('orders.status.preparing'), color: '#6d28d9', bg: 'rgba(109, 40, 217, 0.14)' },
+    READY: { label: t('orders.status.ready'), color: '#0369a1', bg: 'rgba(3, 105, 161, 0.14)' },
+    COMPLETED: { label: t('orders.status.completed'), color: '#047857', bg: 'rgba(4, 120, 87, 0.14)' },
+    CANCELLED: { label: t('orders.status.cancelled'), color: '#b91c1c', bg: 'rgba(185, 28, 28, 0.14)' },
+  };
 
   const filteredOrders = useMemo(() => {
     if (statusFilter === 'ALL') {
@@ -122,12 +126,12 @@ const Orders: React.FC = () => {
   }, [orders]);
 
   const filters: Array<{ key: 'ALL' | OrderStatus; label: string }> = [
-    { key: 'ALL', label: 'Toutes' },
-    { key: 'PREPARING', label: 'En cours' },
-    { key: 'PENDING', label: 'En attente' },
-    { key: 'READY', label: 'Prêtes' },
-    { key: 'COMPLETED', label: 'Terminées' },
-    { key: 'CANCELLED', label: 'Annulées' },
+    { key: 'ALL', label: t('orders.all') },
+    { key: 'PREPARING', label: t('orders.preparing') },
+    { key: 'PENDING', label: t('orders.pending') },
+    { key: 'READY', label: t('orders.ready') },
+    { key: 'COMPLETED', label: t('orders.completed') },
+    { key: 'CANCELLED', label: t('orders.cancelled') },
   ];
 
   const kanbanStatuses: OrderStatus[] = [
@@ -152,13 +156,13 @@ const Orders: React.FC = () => {
     if (filteredOrders.length === 0) return;
 
     const headers = [
-      'Numero',
-      'Client',
-      'Table',
-      'Articles',
-      'Montant',
-      'Heure',
-      'Statut',
+      t('orders.orderNumber'),
+      t('orders.customer'),
+      t('orders.table'),
+      t('orders.items'),
+      t('orders.amount'),
+      t('orders.time'),
+      t('dashboard.status'),
     ];
     const rows = filteredOrders.map((order) => [
       order.orderNumber,
@@ -192,13 +196,13 @@ const Orders: React.FC = () => {
 
   return (
     <Layout
-      title="Mes commandes"
-      subtitle="Suivez les commandes actives de votre restaurant."
+      title={t('orders.myOrders')}
+      subtitle={t('orders.trackActiveOrders')}
     >
       <div className="orders-metrics-grid">
         <div className="card orders-metric-card">
           <div className="orders-metric-label">
-            <ShoppingBag size={14} /> Commandes du jour
+            <ShoppingBag size={14} /> {t('orders.ordersOfDay')}
           </div>
           <div className="orders-metric-value">
             {metrics.ordersOfDay}
@@ -206,15 +210,15 @@ const Orders: React.FC = () => {
         </div>
         <div className="card orders-metric-card">
           <div className="orders-metric-label">
-            <DollarSign size={14} /> Montant total
+            <DollarSign size={14} /> {t('orders.totalAmount')}
           </div>
           <div className="orders-metric-value">
-            {metrics.totalAmount.toFixed(2)} EUR
+            {formatPrice(metrics.totalAmount)}
           </div>
         </div>
         <div className="card orders-metric-card">
           <div className="orders-metric-label">
-            <CircleDashed size={14} /> En cours
+            <CircleDashed size={14} /> {t('orders.inProgress')}
           </div>
           <div className="orders-metric-value">
             {metrics.activeOrders}
@@ -222,7 +226,7 @@ const Orders: React.FC = () => {
         </div>
         <div className="card orders-metric-card">
           <div className="orders-metric-label">
-            <CheckCircle2 size={14} /> Terminées
+            <CheckCircle2 size={14} /> {t('orders.completed')}
           </div>
           <div className="orders-metric-value">
             {metrics.completedOrders}
@@ -230,7 +234,7 @@ const Orders: React.FC = () => {
         </div>
         <div className="card orders-metric-card">
           <div className="orders-metric-label">
-            <XCircle size={14} /> Annulées
+            <XCircle size={14} /> {t('orders.cancelled')}
           </div>
           <div className="orders-metric-value">
             {metrics.cancelledOrders}
@@ -240,17 +244,17 @@ const Orders: React.FC = () => {
 
       <div className="card" style={{ padding: 20 }}>
         <div className="card-header">
-          <span className="card-title">Commandes du service</span>
+          <span className="card-title">{t('orders.serviceOrders')}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               className="btn btn-primary btn-sm"
               onClick={() => setIsEditing((prev) => !prev)}
             >
-              {isEditing ? 'Terminer' : 'Editer'}
+              {isEditing ? t('orders.finish') : t('orders.edit')}
             </button>
             <button className="btn btn-ghost btn-sm" onClick={exportOrdersCsv}>
               <Download size={14} />
-              Exporter
+              {t('common.export')}
             </button>
           </div>
         </div>
@@ -287,13 +291,13 @@ const Orders: React.FC = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>N° commande</th>
-                <th>Client</th>
-                <th>Table</th>
-                <th>Articles</th>
-                <th>Montant</th>
-                <th>Heure</th>
-                <th>Statut</th>
+                <th>{t('orders.orderNumber')}</th>
+                <th>{t('orders.customer')}</th>
+                <th>{t('orders.table')}</th>
+                <th>{t('orders.items')}</th>
+                <th>{t('orders.amount')}</th>
+                <th>{t('orders.time')}</th>
+                <th>{t('dashboard.status')}</th>
               </tr>
             </thead>
             <tbody>
@@ -303,7 +307,7 @@ const Orders: React.FC = () => {
                   <td>{order.customer}</td>
                   <td>{order.table}</td>
                   <td>{order.itemsCount}</td>
-                  <td>{order.total.toFixed(2)} EUR</td>
+                  <td>{formatPrice(order.total)}</td>
                   <td>{order.createdAt}</td>
                   <td>
                     <span
@@ -321,7 +325,7 @@ const Orders: React.FC = () => {
               {filteredOrders.length === 0 && (
                 <tr>
                   <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-400)' }}>
-                    Aucune commande pour ce filtre.
+                    {t('orders.noOrdersForFilter')}
                   </td>
                 </tr>
               )}
@@ -402,13 +406,13 @@ const Orders: React.FC = () => {
                           {order.customer} - {order.table}
                         </div>
                         <div style={{ fontSize: 12, fontWeight: 700, marginTop: 4 }}>
-                          {order.total.toFixed(2)} EUR
+                          {formatPrice(order.total)}
                         </div>
                       </div>
                     ))}
                     {statusOrders.length === 0 && (
                       <div style={{ fontSize: 12, color: 'var(--text-400)', textAlign: 'center', padding: '16px 8px' }}>
-                        Glissez une commande ici
+                        {t('orders.dragOrderHere')}
                       </div>
                     )}
                   </div>

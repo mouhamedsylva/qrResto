@@ -20,6 +20,11 @@ export class UpdateSettingsDto {
   @IsOptional()
   secondaryColor?: string;
 
+  @ApiProperty({ example: 'rounded', required: false })
+  @IsString()
+  @IsOptional()
+  buttonStyle?: string; // 'rounded' | 'square' | 'pill'
+
   @ApiProperty({ example: 'EUR', required: false })
   @IsString()
   @IsOptional()
@@ -46,6 +51,29 @@ export class UpdateSettingsDto {
   @Max(100)
   @IsOptional()
   taxRate?: number;
+
+  @ApiProperty({ example: 20, required: false })
+  @IsNumber()
+  @Min(5)
+  @Max(60)
+  @IsOptional()
+  prepTime?: number;
+
+  // Payment methods
+  @ApiProperty({ example: true, required: false })
+  @IsBoolean()
+  @IsOptional()
+  paymentCash?: boolean;
+
+  @ApiProperty({ example: true, required: false })
+  @IsBoolean()
+  @IsOptional()
+  paymentCard?: boolean;
+
+  @ApiProperty({ example: false, required: false })
+  @IsBoolean()
+  @IsOptional()
+  paymentOnline?: boolean;
 
   @ApiProperty({ example: true, required: false })
   @IsBoolean()

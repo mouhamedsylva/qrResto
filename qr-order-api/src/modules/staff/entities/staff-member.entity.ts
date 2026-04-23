@@ -29,11 +29,11 @@ export class StaffMember {
   })
   status: StaffStatus;
 
-  @Column({ nullable: true })
-  phoneNumber: string;
+  @Column({ type: 'varchar', nullable: true })
+  phoneNumber: string | null;
 
-  @Column({ nullable: true })
-  position: string;
+  @Column({ type: 'varchar', nullable: true })
+  position: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

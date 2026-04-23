@@ -20,14 +20,20 @@ export class Restaurant {
   @Column()
   name: string;
 
-  @Column({ nullable: true })
-  address: string;
+  @Column({ type: 'text', nullable: true })
+  description: string | null;
 
-  @Column({ nullable: true })
-  phoneNumber: string;
+  @Column({ type: 'varchar', nullable: true })
+  address: string | null;
 
-  @Column({ nullable: true })
-  logoUrl: string;
+  @Column({ type: 'varchar', nullable: true })
+  phoneNumber: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  email: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  logoUrl: string | null;
 
   @Column({ default: true })
   isActive: boolean;
